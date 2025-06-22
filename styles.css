@@ -1,0 +1,83 @@
+.infobox-wrapper {
+  float: right;
+  clear: right;
+  width: 320px;
+  margin-left: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 850px) {
+  .infobox-wrapper {
+    float: none;
+    width: 100%;
+    margin: 1rem 0;
+  }
+}
+
+.infobox-float {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 1.25em;
+  box-shadow: var(--shadow-s);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+.infobox-float .callout-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text-accent);
+  text-align: center;
+  margin-bottom: 0.75em;
+}
+
+.infobox-float img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.75em 0;
+}
+
+.infobox-caption {
+  font-style: italic;
+  color: var(--text-faint);
+  font-size: 0.9em;
+  margin-bottom: 0.5em;
+  text-align: center;
+}
+
+.infobox-section-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 1em 0 0.5em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.2em;
+}
+
+.infobox-float table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.infobox-float td {
+  padding: 0.5em 0.6em;
+  vertical-align: top;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.infobox-float tr:first-child td {
+  border-top: none;
+}
+
+.infobox-float td:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+  width: 38%;
+}
+
