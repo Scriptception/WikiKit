@@ -40,16 +40,20 @@ module.exports = class InfoboxPlugin extends Plugin {
       // --- Image handling ---
       let src = null;
       const imageName = overrides.image;
-      const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
-      const baseImageName = imageName || originalFileName;
-      const attachmentFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
+      if (imageName && imageName.startsWith("http")) {
+        src = imageName;
+      } else {
+        const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
+        const baseImageName = imageName || originalFileName;
+        const attachmentFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
 
-      for (const ext of supportedExtensions) {
-        const tryPath = `${attachmentFolder}/${baseImageName}.${ext}`;
-        const fileObj = this.app.metadataCache.getFirstLinkpathDest(tryPath, file);
-        if (fileObj) {
-          src = this.app.vault.getResourcePath(fileObj);
-          break;
+        for (const ext of supportedExtensions) {
+          const tryPath = `${attachmentFolder}/${baseImageName}.${ext}`;
+          const fileObj = this.app.metadataCache.getFirstLinkpathDest(tryPath, file);
+          if (fileObj) {
+            src = this.app.vault.getResourcePath(fileObj);
+            break;
+          }
         }
       }
 
@@ -89,6 +93,7 @@ module.exports = class InfoboxPlugin extends Plugin {
           "caption: Optional caption",
           "exclude: tags,aliases",
           "strip_title: true",
+          "image: https://example.com/image.png",
           "```"
         ].join("\n");
         editor.replaceSelection(template + "\n");
@@ -121,4 +126,3 @@ module.exports = class InfoboxPlugin extends Plugin {
     }
   }
 };
-
