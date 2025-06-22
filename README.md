@@ -15,11 +15,13 @@ This Obsidian plugin adds a floating infobox-style callout to your notes, automa
 
 Add the following code block to any note:
 
-> ```infobox
-> caption: Optional caption
-> exclude: tags,aliases
-> strip_title: true
-> ```
+````
+```infobox
+caption: Optional caption
+exclude: tags,aliases
+strip_title: true
+```
+````
 
 ## 📌 Supported Parameters
 
