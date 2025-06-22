@@ -17,9 +17,9 @@ Add the following code block to any note:
 
 ````
 ```infobox
-caption: Optional caption
-exclude: tags,aliases
-strip_title: true
+caption: Optional caption # OPTIONAL
+exclude: tags,aliases # OPTIONAL
+strip_title: true # OPTIONAL
 ```
 ````
 
