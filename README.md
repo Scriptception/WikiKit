@@ -1,97 +1,64 @@
+# 🧠 Infobox Plugin for Obsidian
 
-In preview mode, the plugin will render an infobox using frontmatter fields from the current file.
+This Obsidian plugin adds a floating infobox-style callout to your notes, automatically pulling metadata from frontmatter and optionally displaying a linked image.
 
----
+## ✨ Features
 
-## ⚙️ Optional Parameters
+ - 📄 Automatically renders an infobox from frontmatter fields.
+ - 🖼️ Embeds an image if one exists with the same name as the note.
+ - 🎯 Floats to the right of your content with responsive behavior.
+ - 🔧 Allows easy overrides via code block parameters.
+ - 🎨 Customizable via styles.css.
+ - ⚡ Command palette shortcut to insert infobox template.
 
-You can override or add data using simple key-value syntax inside the code block:
+## 🛠️ Usage
 
-```markdown
+Add the following code block to any note:
+
 ```infobox
-title: Custom Title
-image: my-image.png
-caption: This is a caption below the image
-exclude: updated, created
-hideTable: false
-
-fields:
-  Status: Active
-  Origin: Earth
-
-sections:
-  Features: |
-    - Lightweight
-    - Easy to use
-  Notes: |
-    Supports markdown and line breaks
-```
+caption: Optional caption
+exclude: tags,aliases
+strip_title: true
 ```
 
----
+## 📌 Supported Parameters
 
-## 🧠 Behavior
+|Key|Description|
+|---|-----------|
+|caption|Caption text displayed under the image (optional).|
+|title|Override the title shown at the top of the infobox.|
+|exclude|Comma-separated list of frontmatter keys to hide.|
+|image|Specify an image filename (without extension) if different from note name.|
+|strip_title|If true (default), removes prefixes like Folder - Title.|
+|hidetable|If true, hides the frontmatter detail table completely.|
 
-- Uses frontmatter fields unless `hideTable: true`.
-- Additional `fields:` are rendered below frontmatter.
-- `sections:` render custom titled content blocks.
-- All parameters are optional.
+## 📂 Image Handling
 
----
+The plugin auto-detects images using these rules:
+ - Matches the current note name with supported extensions (.png, .jpg, .jpeg, .webp, .gif)
+ - Looks in your Obsidian attachments folder as defined in Settings > Files & Links > Attachment folder path
+ - Use `image: CustomName` to specify a different image name (no extension)
 
-## 🧵 Styling
+## 💬 Command Palette
 
-Include a `styles.css` in your plugin folder to customize the appearance.
+Use the command: `Insert Infobox` to insert a boilerplate template for the infobox block.
 
-Example:
+## 🎨 Styling
+Customize the appearance via the bundled styles.css file. The plugin automatically injects it on load. Update this file for:
+ - Font sizes
+ - Table layout
+ - Box shadow
+ - Colors and spacing
 
-```css
-.infobox-float {
-  border-radius: 8px;
-  background-color: var(--background-secondary);
-  padding: 1em;
-  margin: 1em 0;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-}
+## 📦 Installation
+Place the plugin folder inside .obsidian/plugins/infobox-plugin.
 
-.infobox-section-header {
-  font-weight: bold;
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-}
+Make sure it contains:
+ - main.js
+ - manifest.json
+ - styles.css
 
-.infobox-caption {
-  font-style: italic;
-  color: var(--text-muted);
-  margin-bottom: 1em;
-}
-```
+Enable the plugin from Obsidian Settings → Community Plugins.
 
----
-
-## ✅ Example
-
-With frontmatter:
-
-```yaml
----
-title: Halo Reach
-platform: Xbox 360
-release: 2010
-genre: FPS
----
-```
-
-And:
-
-````markdown
-```infobox
-image: halo.jpg
-caption: The Fall of Reach
-fields:
-  Developer: Bungie
-sections:
-  Trivia: |
-    This was the final Halo game by Bungie.
-```
-
+## 🧹 Unloading
+The plugin cleanly removes styles on unload and leaves your notes untouched.
