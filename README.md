@@ -62,3 +62,40 @@ Enable the plugin from Obsidian Settings → Community Plugins.
 
 ## 🧹 Unloading
 The plugin cleanly removes styles on unload and leaves your notes untouched.
+
+
+## 🔧 Default Parameters and Their Behavior
+|Parameter|Type|Default Value|Behavior|
+|---------|----|-------------|--------|
+|caption|string|empty|Optional text shown below the image.|
+|title|string|Note title|Custom title override shown at the top of the infobox.|
+|exclude|string|tags,aliases|Comma-separated list of frontmatter keys to skip from the detail table.|
+|strip_title|string|true|If true, removes everything before - in the title display.|
+|image|string|Derived from note name|Optional base filename to search for image (excluding file extension).|
+|hidetable|string|false|If true, suppresses the frontmatter detail table entirely.|
+
+## 🧠 Additional Notes
+exclude is case-insensitive and merged with a default exclusion list:
+["tags", "aliases", "file", "position", "created", "updated", "source"].
+
+Image search:
+
+If image is not provided, the plugin searches for an image using the note’s name.
+
+Searches within the attachmentFolderPath set in Obsidian settings.
+
+Extensions checked in order: .png, .jpg, .jpeg, .webp, .gif.
+
+strip_title:
+
+When true (default), note titles like Category - Title will be shortened to just Title.
+
+Set strip_title: false to retain the full note name as title.
+
+Fallbacks:
+
+If no title is provided, it will use frontmatter title, or the note's filename.
+
+If no image is found, the image block is omitted.
+
+
