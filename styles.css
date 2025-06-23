@@ -4,8 +4,10 @@
   width: 320px;
   margin-left: 2rem;
   margin-bottom: 1.5rem;
-  z-index: 10; /* To sit above <hr> content */
+  position: relative;
+  z-index: 10;
 }
+
 
 @media (max-width: 850px) {
   .infobox-wrapper {
@@ -80,5 +82,67 @@
   color: var(--text-muted);
   font-weight: 500;
   width: 38%;
+}
+
+
+.tagtable-wrapper {
+  margin: 1.5rem 0;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-s);
+  overflow-x: auto;
+  padding: 1em;
+}
+
+.tagtable-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  text-align: left;
+  margin-bottom: 0.75em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.25em;
+}
+
+.tagtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.tagtable td {
+  padding: 0.6em 0.8em;
+  vertical-align: top;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.tagtable tr:first-child td {
+  border-top: none;
+}
+
+.tagtable-type {
+  font-weight: 600;
+  text-transform: None;
+  color: var(--text-muted);
+  width: 15%;
+  white-space: nowrap;
+  vertical-align: middle !important;
+}
+
+.tagtable-subtype {
+  font-style: italic;
+  color: var(--text-faint);
+  width: 10%;
+  white-space: nowrap;
+}
+
+.tagtable a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.tagtable a:hover {
+  text-decoration: underline;
 }
 

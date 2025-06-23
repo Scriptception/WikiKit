@@ -1,9 +1,8 @@
-// Import Obsidian plugin base class and Node.js utilities
+// wikikit-plugin/main.js
 const { Plugin } = require("obsidian");
 const fs = require("fs");
 const path = require("path");
 
-// Parses simple "key: value" config blocks into an object
 function parseSimpleBlock(source) {
   const config = {};
   source.split("\n").forEach(line => {
@@ -15,32 +14,26 @@ function parseSimpleBlock(source) {
   return config;
 }
 
-// Main plugin class
-module.exports = class InfoboxPlugin extends Plugin {
+module.exports = class WikiKitPlugin extends Plugin {
   async onload() {
-    console.log("Infobox Plugin loaded ✅");
+    console.log("WikiKit Plugin loaded ✅");
 
-    // Register a custom Markdown code block processor for ```infobox
+    // --- Infobox Block Processor ---
     this.registerMarkdownCodeBlockProcessor("infobox", async (source, el, ctx) => {
-      // Parse config options from the code block
       const overrides = parseSimpleBlock(source);
 
-      // Get the current note file and its frontmatter
       const file = ctx.sourcePath;
       const cache = this.app.metadataCache.getCache(file) || {};
       const frontmatter = cache.frontmatter || {};
 
-      // Determine keys to exclude from the info table
       const excludeKeys = new Set(
         ["tags", "aliases", "file", "position", "created", "updated", "Source"]
           .concat((overrides.exclude || "").split(/[\,\n]/).map(k => k.trim().toLowerCase()))
       );
 
-      // Determine the display title
       const originalFileName = file.replace(/^[^/]*[\\/]/, '').replace(/\.md$/, '');
       let displayName = overrides.title || frontmatter.title || originalFileName;
 
-      // Optionally strip prefix from title (e.g., "Project - Name" → "Name")
       if (overrides.strip_title !== "false") {
         displayName = displayName.replace(/^.*? - /, '');
       }
@@ -48,12 +41,9 @@ module.exports = class InfoboxPlugin extends Plugin {
       // --- Image handling ---
       let src = null;
       const imageName = overrides.image;
-
-      // Use external image if URL is provided
       if (imageName && imageName.startsWith("http")) {
         src = imageName;
       } else {
-        // Search for a local image with supported extensions
         const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
         const baseImageName = imageName || originalFileName;
         const attachmentFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
@@ -68,7 +58,6 @@ module.exports = class InfoboxPlugin extends Plugin {
         }
       }
 
-      // Generate HTML table rows from frontmatter
       const rows = overrides.hidetable === "true" ? "" : Object.entries(frontmatter)
         .filter(([k]) => !excludeKeys.has(k.toLowerCase()))
         .map(([k, v]) => {
@@ -78,7 +67,6 @@ module.exports = class InfoboxPlugin extends Plugin {
         })
         .join("");
 
-      // Create the main infobox element
       const infoboxEl = document.createElement("div");
       infoboxEl.className = "infobox-float callout";
       infoboxEl.setAttribute("data-callout", "infobox");
@@ -89,18 +77,120 @@ module.exports = class InfoboxPlugin extends Plugin {
         ${rows ? `<div class="infobox-section-header">Details</div><table>${rows}</table>` : ""}
       `;
 
-      // Wrap the infobox and insert it before the original code block
       const wrapper = document.createElement("div");
       wrapper.className = "infobox-wrapper";
       wrapper.setAttribute("style", "float: right; clear: right; width: 320px; margin-left: 2rem; margin-bottom: 1.5rem;");
       wrapper.appendChild(infoboxEl);
       el.parentElement.insertBefore(wrapper, el);
-
-      // Hide the original code block
       el.style.display = "none";
     });
 
-    // Register a command to insert a sample infobox block
+    // --- EntityTable Block Processor ---
+    this.registerMarkdownCodeBlockProcessor("tagtable", async (source, el, ctx) => {
+      const overrides = parseSimpleBlock(source);
+
+      const level1 = overrides.level1?.toLowerCase() || "entity";
+      const level2 = overrides.level2?.toLowerCase() || "type";
+      const level3 = overrides.level3?.toLowerCase() || "subtype";
+
+      const currentFile = ctx.sourcePath;
+      const currentCache = this.app.metadataCache.getCache(currentFile);
+      const currentFrontmatter = currentCache?.frontmatter || {};
+      const currentTags = (currentFrontmatter.tags || []).map(t => t.toLowerCase());
+
+      const targetEntityTag = currentTags.find(tag => tag.startsWith(`${level1}/`));
+      if (!targetEntityTag) {
+        el.innerHTML = "<p><em>No Entity tag found on this page.</em></p>";
+        return;
+      }
+
+      const pages = this.app.vault.getMarkdownFiles();
+      const groupedData = {};
+
+      for (const page of pages) {
+        const cache = this.app.metadataCache.getCache(page.path);
+        if (!cache || !cache.frontmatter) continue;
+
+        const fm = cache.frontmatter;
+        const tags = (fm.tags || []).map(t => t.toLowerCase());
+
+        if (!tags.includes(targetEntityTag)) continue;
+
+        const typeTag = tags.find(tag => tag.startsWith(`${level2}/`));
+        if (!typeTag) continue;
+
+        const subTypeTag = tags.find(tag => tag.startsWith(`${level3}/`));
+
+        const type = typeTag;
+        const sub = subTypeTag || "—";
+
+        if (!groupedData[type]) groupedData[type] = {};
+        if (!groupedData[type][sub]) groupedData[type][sub] = [];
+
+        let title = fm.title || page.basename;
+        title = title.replace(/^.*? - /, '');
+
+        groupedData[type][sub].push({
+          name: title,
+          path: page.path
+        });
+      }
+
+      const title = targetEntityTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+
+      const tableWrapper = document.createElement("div");
+      tableWrapper.className = "tagtable-wrapper";
+      tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
+
+      const table = document.createElement("table");
+      table.className = "tagtable";
+
+      for (const [type, subGroups] of Object.entries(groupedData)) {
+        const typeRow = document.createElement("tr");
+        const typeCell = document.createElement("td");
+        typeCell.setAttribute("rowspan", Object.keys(subGroups).length);
+        typeCell.textContent = type.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+        typeCell.className = "tagtable-type";
+        typeRow.appendChild(typeCell);
+
+        let first = true;
+        for (const [sub, entries] of Object.entries(subGroups)) {
+          const row = first ? typeRow : document.createElement("tr");
+          first = false;
+
+          const subCell = document.createElement("td");
+          subCell.textContent = sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+          subCell.className = "tagtable-subtype";
+
+          const entriesCell = document.createElement("td");
+          entriesCell.innerHTML = entries
+            .map(e => `<a href="#" data-href="${e.path}">${e.name}</a>`)
+            .join(" · ");
+
+          row.appendChild(subCell);
+          row.appendChild(entriesCell);
+          table.appendChild(row);
+        }
+      }
+
+      tableWrapper.appendChild(table);
+      el.appendChild(tableWrapper);
+
+      tableWrapper.querySelectorAll("a[data-href]").forEach(link => {
+        link.addEventListener("click", (evt) => {
+          evt.preventDefault();
+          const targetPath = link.getAttribute("data-href");
+          const targetFile = this.app.vault.getAbstractFileByPath(targetPath);
+          if (targetFile) {
+            this.app.workspace.openLinkText(
+              this.app.metadataCache.fileToLinktext(targetFile, ctx.sourcePath),
+              ctx.sourcePath
+            );
+          }
+        });
+      });
+    });
+
     this.addCommand({
       id: "insert-infobox",
       name: "Insert Infobox",
@@ -117,16 +207,28 @@ module.exports = class InfoboxPlugin extends Plugin {
       }
     });
 
-    // Load the plugin's CSS from styles.css
+    this.addCommand({
+      id: "insert-tag-table",
+      name: "Insert Tag Table",
+      editorCallback: (editor) => {
+        const block = [
+          "```tagtable",
+          "level1: Entity",
+          "level2: Type",
+          "level3: SubType",
+          "```"
+        ].join("\n");
+        editor.replaceSelection(block + "\n");
+      }
+    });
+
     this.injectStyles();
   }
 
-  // Called when the plugin is disabled or reloaded
   onunload() {
-    console.log("Infobox Plugin unloaded 🛃");
+    console.log("WikiKit Plugin unloaded 🛃");
   }
 
-  // Load and inject custom styles from the plugin's styles.css file
   injectStyles() {
     const pluginPath = this.app.vault.adapter.basePath
       ? path.join(this.app.vault.adapter.basePath, ".obsidian", "plugins", this.manifest.id)
@@ -137,12 +239,12 @@ module.exports = class InfoboxPlugin extends Plugin {
     try {
       const css = fs.readFileSync(cssPath, "utf8");
       const styleTag = document.createElement("style");
-      styleTag.id = "infobox-plugin-styles";
+      styleTag.id = "wikikit-plugin-styles";
       styleTag.textContent = css;
       document.head.appendChild(styleTag);
-      console.log("✅ Infobox CSS injected");
+      console.log("✅ WikiKit CSS injected");
     } catch (err) {
-      console.warn("⚠️ No infobox styles.css found (skipping)");
+      console.warn("⚠️ No WikiKit styles.css found (skipping)");
     }
   }
 };
