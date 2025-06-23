@@ -1,7 +1,7 @@
 // wikikit-plugin/main.js
 const { Plugin } = require("obsidian");
-const fs = require("fs");
-const path = require("path");
+
+
 
 function parseSimpleBlock(source) {
   const config = {};
@@ -231,10 +231,10 @@ module.exports = class WikiKitPlugin extends Plugin {
 
   injectStyles() {
     const pluginPath = this.app.vault.adapter.basePath
-      ? path.join(this.app.vault.adapter.basePath, ".obsidian", "plugins", this.manifest.id)
+      ? "" /* removed path usage */
       : "";
 
-    const cssPath = path.join(pluginPath, "styles.css");
+    const cssPath = "" /* removed path usage */;
 
     try {
       const css = fs.readFileSync(cssPath, "utf8");
