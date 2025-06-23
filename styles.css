@@ -19,7 +19,7 @@
 
 .infobox-float {
   background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--text-accent); /* <- this line adds the border */
   border-radius: 10px;
   padding: 1.25em;
   box-shadow: var(--shadow-s);
@@ -29,10 +29,12 @@
 }
 
 .infobox-float .callout-title {
+  display: block;
+  width: 100%;
+  text-align: center;
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--text-accent);
-  text-align: center;
   margin-bottom: 0.75em;
 }
 
@@ -60,6 +62,7 @@
   margin: 1em 0 0.5em;
   border-bottom: 1px solid var(--background-modifier-border);
   padding-bottom: 0.2em;
+  text-align: center;
 }
 
 .infobox-float table {
