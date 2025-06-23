@@ -4,6 +4,7 @@
   width: 320px;
   margin-left: 2rem;
   margin-bottom: 1.5rem;
+  z-index: 10; /* To sit above <hr> content */
 }
 
 @media (max-width: 850px) {

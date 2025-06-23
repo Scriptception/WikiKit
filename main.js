@@ -1,8 +1,9 @@
-// infobox-plugin/main.js
+// Import Obsidian plugin base class and Node.js utilities
 const { Plugin } = require("obsidian");
 const fs = require("fs");
 const path = require("path");
 
+// Parses simple "key: value" config blocks into an object
 function parseSimpleBlock(source) {
   const config = {};
   source.split("\n").forEach(line => {
@@ -14,25 +15,32 @@ function parseSimpleBlock(source) {
   return config;
 }
 
+// Main plugin class
 module.exports = class InfoboxPlugin extends Plugin {
   async onload() {
     console.log("Infobox Plugin loaded ✅");
 
+    // Register a custom Markdown code block processor for ```infobox
     this.registerMarkdownCodeBlockProcessor("infobox", async (source, el, ctx) => {
+      // Parse config options from the code block
       const overrides = parseSimpleBlock(source);
 
+      // Get the current note file and its frontmatter
       const file = ctx.sourcePath;
       const cache = this.app.metadataCache.getCache(file) || {};
       const frontmatter = cache.frontmatter || {};
 
+      // Determine keys to exclude from the info table
       const excludeKeys = new Set(
         ["tags", "aliases", "file", "position", "created", "updated", "Source"]
           .concat((overrides.exclude || "").split(/[\,\n]/).map(k => k.trim().toLowerCase()))
       );
 
+      // Determine the display title
       const originalFileName = file.replace(/^[^/]*[\\/]/, '').replace(/\.md$/, '');
       let displayName = overrides.title || frontmatter.title || originalFileName;
 
+      // Optionally strip prefix from title (e.g., "Project - Name" → "Name")
       if (overrides.strip_title !== "false") {
         displayName = displayName.replace(/^.*? - /, '');
       }
@@ -40,9 +48,12 @@ module.exports = class InfoboxPlugin extends Plugin {
       // --- Image handling ---
       let src = null;
       const imageName = overrides.image;
+
+      // Use external image if URL is provided
       if (imageName && imageName.startsWith("http")) {
         src = imageName;
       } else {
+        // Search for a local image with supported extensions
         const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
         const baseImageName = imageName || originalFileName;
         const attachmentFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
@@ -57,6 +68,7 @@ module.exports = class InfoboxPlugin extends Plugin {
         }
       }
 
+      // Generate HTML table rows from frontmatter
       const rows = overrides.hidetable === "true" ? "" : Object.entries(frontmatter)
         .filter(([k]) => !excludeKeys.has(k.toLowerCase()))
         .map(([k, v]) => {
@@ -66,6 +78,7 @@ module.exports = class InfoboxPlugin extends Plugin {
         })
         .join("");
 
+      // Create the main infobox element
       const infoboxEl = document.createElement("div");
       infoboxEl.className = "infobox-float callout";
       infoboxEl.setAttribute("data-callout", "infobox");
@@ -76,17 +89,21 @@ module.exports = class InfoboxPlugin extends Plugin {
         ${rows ? `<div class="infobox-section-header">Details</div><table>${rows}</table>` : ""}
       `;
 
+      // Wrap the infobox and insert it before the original code block
       const wrapper = document.createElement("div");
       wrapper.className = "infobox-wrapper";
       wrapper.setAttribute("style", "float: right; clear: right; width: 320px; margin-left: 2rem; margin-bottom: 1.5rem;");
       wrapper.appendChild(infoboxEl);
       el.parentElement.insertBefore(wrapper, el);
+
+      // Hide the original code block
       el.style.display = "none";
     });
 
+    // Register a command to insert a sample infobox block
     this.addCommand({
       id: "insert-infobox",
-      name: "WikiNotes - Insert Infobox",
+      name: "Insert Infobox",
       editorCallback: (editor) => {
         const template = [
           "```infobox",
@@ -100,13 +117,16 @@ module.exports = class InfoboxPlugin extends Plugin {
       }
     });
 
+    // Load the plugin's CSS from styles.css
     this.injectStyles();
   }
 
+  // Called when the plugin is disabled or reloaded
   onunload() {
     console.log("Infobox Plugin unloaded 🛃");
   }
 
+  // Load and inject custom styles from the plugin's styles.css file
   injectStyles() {
     const pluginPath = this.app.vault.adapter.basePath
       ? path.join(this.app.vault.adapter.basePath, ".obsidian", "plugins", this.manifest.id)
@@ -126,3 +146,4 @@ module.exports = class InfoboxPlugin extends Plugin {
     }
   }
 };
+
