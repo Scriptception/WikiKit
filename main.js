@@ -35,7 +35,7 @@ module.exports = class WikiKitPlugin extends Plugin {
       let displayName = overrides.title || frontmatter.title || originalFileName;
 
       if (overrides.strip_title !== "false") {
-        displayName = displayName.replace(/^.*? - /, '');
+        displayName = displayName.replace(/^.* - /, '');
       }
 
       // --- Image handling ---
@@ -128,7 +128,7 @@ module.exports = class WikiKitPlugin extends Plugin {
         if (!groupedData[type][sub]) groupedData[type][sub] = [];
 
         let title = fm.title || page.basename;
-        title = title.replace(/^.*? - /, '');
+        title = title.replace(/^.* - /, '');
 
         groupedData[type][sub].push({
           name: title,
