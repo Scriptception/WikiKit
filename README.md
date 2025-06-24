@@ -19,7 +19,7 @@ Obsidian plugin to render structured **infoboxes** and **tag tables** from your 
 
 ## 📦 Installation
 
-Place files in `.obsidian/plugins/wikikit-plugin/`:
+Place files in `.obsidian/plugins/WikiKit/`:
 
 * `main.js`
 * `manifest.json`
