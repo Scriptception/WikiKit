@@ -83,6 +83,8 @@ level3: SubType
 * **Supports multiple area tags** - displays separate tables for each area tag found on the page
 * **Respects tag order** - tables appear in the same order as tags in frontmatter
 * Groups entries by `level2`, then `level3` (optional)
+* **Formats tag names** - replaces underscores with spaces and capitalizes all words (e.g., `video_games` → `Video Games`)
+* **Alphabetical sorting** - categories and subcategories are sorted alphabetically for consistent display
 * Titles, types, and subtypes are capitalized
 * Titles are stripped like infoboxes (default)
 
@@ -96,6 +98,12 @@ level3: SubType
 | `first_only`| If `true`, shows only the first area table     |
 
 > **💡 Note**: By default, all area tables are displayed. Use `first_only: true` to show only the first area table.
+
+> **📝 Sorting**: Categories and subcategories are sorted alphabetically. "Uncategorized" categories and empty subcategories appear first in their respective lists.
+
+> **🎯 Pro Tip**: Use underscores as invisible sorting prefixes to control order! Since underscores are replaced with spaces during display, you can name tags like `___Collection`, `__Topic`, `_Molecule` to force them to appear in that order while displaying as "Collection", "Topic", "Molecule".
+
+> **🔄 Workflow Tip**: Pair with [Tag Wrangler](https://github.com/pjeby/tag-wrangler) for seamless tag structure evolution! Mass rename tags across your vault and watch your tag tables automatically reflect the new organization. Perfect for refining your taxonomy as your knowledge base grows.
 
 ---
 
@@ -225,6 +233,24 @@ first_only: true
 ```
 ````
 This will display only the first area table, even if the note has multiple area tags.
+
+### Tag Formatting Example
+````markdown
+---
+title: Gaming Collection
+tags: [area/video_games, category/action_games, subcategory/first_person_shooters]
+---
+
+```tagtable
+level1: area
+level2: category
+level3: subcategory
+```
+````
+This will display:
+- Area: "Video Games" (from `video_games`)
+- Category: "Action Games" (from `action_games`) 
+- Subcategory: "First Person Shooters" (from `first_person_shooters`)
 
 ### Sidebar Integration
 1. Open any note with tags like `entity/character`

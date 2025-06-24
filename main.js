@@ -42,6 +42,13 @@ function parseSimpleBlock(source) {
   return config;
 }
 
+// --- Utility: Format tag name for display ---
+function formatTagName(tagName) {
+  return tagName
+    .replace(/_/g, ' ')  // Replace underscores with spaces
+    .replace(/\b\w/g, c => c.toUpperCase());  // Capitalize all words
+}
+
 // --- Helper: Render Tag Table (shared by codeblock & sidebar) ---
 async function renderTagTable(plugin, filePath, container, overrides = {}) {
   container.innerHTML = "";
@@ -99,7 +106,7 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     }
     
     // Build table HTML for this area
-    const title = targetAreaTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+    const title = formatTagName(targetAreaTag.split("/").slice(-1)[0]);
     const tableWrapper = document.createElement("div");
     tableWrapper.className = "tagtable-wrapper sidebar";
     
@@ -112,22 +119,39 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     const table = document.createElement("table");
     table.className = "tagtable";
     
-    for (const [category, subGroups] of Object.entries(groupedData)) {
+    // Sort categories alphabetically, with "Uncategorized" always first
+    const sortedCategories = Object.keys(groupedData).sort((a, b) => {
+      if (a === "Uncategorized") return -1;
+      if (b === "Uncategorized") return 1;
+      return a.localeCompare(b);
+    });
+    
+    for (const category of sortedCategories) {
+      const subGroups = groupedData[category];
       const categoryRow = document.createElement("tr");
       const categoryCell = document.createElement("td");
       categoryCell.setAttribute("rowspan", Object.keys(subGroups).length);
       // Handle "Uncategorized" specially
-      const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+      const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : formatTagName(category.split("/").slice(-1)[0]);
       categoryCell.textContent = categoryDisplay;
       categoryCell.className = "tagtable-category";
       categoryRow.appendChild(categoryCell);
+      
+      // Sort subcategories alphabetically, with empty string (no subcategory) first
+      const sortedSubCategories = Object.keys(subGroups).sort((a, b) => {
+        if (a === "") return -1;
+        if (b === "") return 1;
+        return a.localeCompare(b);
+      });
+      
       let first = true;
-      for (const [sub, entries] of Object.entries(subGroups)) {
+      for (const sub of sortedSubCategories) {
+        const entries = subGroups[sub];
         const row = first ? categoryRow : document.createElement("tr");
         first = false;
         const subCell = document.createElement("td");
         // Handle blank subcategory
-        const subDisplay = sub === "" ? "" : sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+        const subDisplay = sub === "" ? "" : formatTagName(sub.split("/").slice(-1)[0]);
         subCell.textContent = subDisplay;
         subCell.className = "tagtable-subcategory";
         const entriesCell = document.createElement("td");
