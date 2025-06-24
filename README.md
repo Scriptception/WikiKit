@@ -11,6 +11,9 @@ Obsidian plugin to render structured **infoboxes** and **tag tables** from your 
 * 📚 Dynamic tag tables grouped by tags
 * 🎨 Easy styling via CSS
 * ⚡ One-click command palette templates
+* 🔧 **Settings tab** for customizing tag levels
+* 📋 **Sidebar view** for real-time tag table display
+* 🎯 **Ribbon icon** for quick sidebar access
 
 ---
 
@@ -59,7 +62,7 @@ If `image` is omitted, the plugin:
 
 ---
 
-## 📊 Entity Table
+## 📊 Tag Table
 
 Renders grouped links based on note tags. Add this block:
 
@@ -71,14 +74,14 @@ level3: SubType
 ```
 ````
 
-### Entity Table Behavior
+### Tag Table Behavior
 
 * Scans all notes that share the same `level1` tag as the current page
 * Groups entries by `level2`, then `level3` (optional)
 * Titles, types, and subtypes are capitalized
 * Titles are stripped like infoboxes (default)
 
-### Entity Table Parameters
+### Tag Table Parameters
 
 | Key      | Description                    |
 | -------- | ------------------------------ |
@@ -88,12 +91,42 @@ level3: SubType
 
 ---
 
+## 🔧 Settings
+
+Access via **Settings → Community Plugins → WikiKit**:
+
+* **Level 1 Tag**: Top-level tag (default: `entity`)
+* **Level 2 Tag**: Middle group tag (default: `type`) 
+* **Level 3 Tag**: Subgroup tag (default: `subtype`)
+
+These settings apply globally unless overridden in individual tagtable blocks.
+
+---
+
+## 📋 Sidebar View
+
+The plugin includes a **Tag Table Sidebar** that:
+
+* Shows related pages for the currently active note
+* Updates automatically when switching between files
+* Uses your configured tag level settings
+* Accessible via ribbon icon or command palette
+
+### Accessing the Sidebar
+
+* Click the **table icon** in the ribbon
+* Use command: **"Show Tag Table Sidebar"**
+* Automatically appears on the right side
+
+---
+
 ## ⚙️ Commands
 
 Use via command palette:
 
-* `Insert Infobox`
-* `Insert Entity Table`
+* **Insert Infobox** - Adds infobox template
+* **Insert Tag Table** - Adds tagtable template  
+* **Show Tag Table Sidebar** - Opens sidebar view
 
 ---
 
@@ -105,4 +138,38 @@ Edit `styles.css` to customize:
 * Spacing
 * Table formatting
 * Infobox shadows, fonts
+* Sidebar appearance
+
+---
+
+## 📝 Usage Examples
+
+### Basic Infobox
+```markdown
+---
+title: John Doe
+age: 30
+occupation: Developer
+tags: [person/character]
+---
+
+```infobox
+caption: Main character
+exclude: tags,aliases
+```
+```
+
+### Tag Table with Custom Levels
+```markdown
+```tagtable
+level1: person
+level2: role
+level3: department
+```
+```
+
+### Sidebar Integration
+1. Open any note with tags like `entity/character`
+2. Click the ribbon table icon
+3. See all related pages grouped by type/subtype
 
