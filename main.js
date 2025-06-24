@@ -17,9 +17,16 @@ const TAGTABLE_ICON_SVG = `
 `;
 const WIKIKIT_TAGTABLE_VIEW_TYPE = "wikikit-tagtable-sidebar";
 const DEFAULT_SETTINGS = {
+  // Tag Table Settings
   level1: 'entity',
   level2: 'type',
-  level3: 'subtype'
+  level3: 'subtype',
+  // Infobox Settings
+  infobox_width: '320px',
+  infobox_margin_left: '2rem',
+  infobox_margin_bottom: '1.5rem',
+  infobox_strip_title: true,
+  infobox_exclude_keys: 'tags,aliases,file,position,created,updated,Source'
 };
 
 // --- Utility: Parse simple key:value block ---
@@ -124,15 +131,17 @@ function renderInfobox(plugin, source, el, ctx) {
   const file = ctx.sourcePath;
   const cache = plugin.app.metadataCache.getCache(file) || {};
   const frontmatter = cache.frontmatter || {};
-  // Exclude keys
+  // Exclude keys - use settings or overrides
+  const defaultExcludeKeys = (plugin.settings.infobox_exclude_keys || 'tags,aliases,file,position,created,updated,Source').split(/[\,\n]/).map(k => k.trim().toLowerCase());
   const excludeKeys = new Set(
-    ["tags", "aliases", "file", "position", "created", "updated", "Source"]
+    defaultExcludeKeys
       .concat((overrides.exclude || "").split(/[\,\n]/).map(k => k.trim().toLowerCase()))
   );
   // Title logic
   const originalFileName = file.replace(/^[^/]*[\\/]/, '').replace(/\.md$/, '');
   let displayName = overrides.title || frontmatter.title || originalFileName;
-  if (overrides.strip_title !== "false") {
+  const shouldStripTitle = overrides.strip_title !== undefined ? overrides.strip_title !== "false" : plugin.settings.infobox_strip_title;
+  if (shouldStripTitle) {
     displayName = displayName.replace(/^.* - /, '');
   }
   // Image logic
@@ -172,10 +181,13 @@ function renderInfobox(plugin, source, el, ctx) {
     ${overrides.caption ? `<div class="infobox-caption">${overrides.caption}</div>` : ""}
     ${rows ? `<div class="infobox-section-header">Details</div><table>${rows}</table>` : ""}
   `;
-  // Wrapper
+  // Wrapper - use settings for styling
   const wrapper = document.createElement("div");
   wrapper.className = "infobox-wrapper";
-  wrapper.setAttribute("style", "float: right; clear: right; width: 320px; margin-left: 2rem; margin-bottom: 1.5rem;");
+  const width = overrides.width || plugin.settings.infobox_width || '320px';
+  const marginLeft = overrides.margin_left || plugin.settings.infobox_margin_left || '2rem';
+  const marginBottom = overrides.margin_bottom || plugin.settings.infobox_margin_bottom || '1.5rem';
+  wrapper.setAttribute("style", `float: right; clear: right; width: ${width}; margin-left: ${marginLeft}; margin-bottom: ${marginBottom};`);
   wrapper.appendChild(infoboxEl);
   el.parentElement.insertBefore(wrapper, el);
   el.style.display = "none";
@@ -328,7 +340,73 @@ class WikiKitSettingTab extends PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'WikiKit Tag Table Settings' });
+    containerEl.createEl('h2', { text: 'WikiKit Settings' });
+    
+    // Infobox Settings Section
+    containerEl.createEl('h3', { text: 'Infobox Settings' });
+    
+    // Infobox Width
+    new Setting(containerEl)
+      .setName('Infobox Width')
+      .setDesc('Default width for infoboxes (e.g. 320px, 25%)')
+      .addText(text => text
+        .setPlaceholder('320px')
+        .setValue(this.plugin.settings.infobox_width)
+        .onChange(async (value) => {
+          this.plugin.settings.infobox_width = value.trim() || '320px';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Infobox Margin Left
+    new Setting(containerEl)
+      .setName('Infobox Margin Left')
+      .setDesc('Left margin for infoboxes (e.g. 2rem, 20px)')
+      .addText(text => text
+        .setPlaceholder('2rem')
+        .setValue(this.plugin.settings.infobox_margin_left)
+        .onChange(async (value) => {
+          this.plugin.settings.infobox_margin_left = value.trim() || '2rem';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Infobox Margin Bottom
+    new Setting(containerEl)
+      .setName('Infobox Margin Bottom')
+      .setDesc('Bottom margin for infoboxes (e.g. 1.5rem, 15px)')
+      .addText(text => text
+        .setPlaceholder('1.5rem')
+        .setValue(this.plugin.settings.infobox_margin_bottom)
+        .onChange(async (value) => {
+          this.plugin.settings.infobox_margin_bottom = value.trim() || '1.5rem';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Infobox Strip Title
+    new Setting(containerEl)
+      .setName('Strip Title Prefix')
+      .setDesc('Automatically remove prefixes like "Folder - " from titles')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.infobox_strip_title)
+        .onChange(async (value) => {
+          this.plugin.settings.infobox_strip_title = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Infobox Exclude Keys
+    new Setting(containerEl)
+      .setName('Default Exclude Keys')
+      .setDesc('Comma-separated list of frontmatter keys to hide by default')
+      .addText(text => text
+        .setPlaceholder('tags,aliases,file,position,created,updated,Source')
+        .setValue(this.plugin.settings.infobox_exclude_keys)
+        .onChange(async (value) => {
+          this.plugin.settings.infobox_exclude_keys = value.trim() || 'tags,aliases,file,position,created,updated,Source';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Tag Table Settings Section
+    containerEl.createEl('h3', { text: 'Tag Table Settings' });
+    
     // Level 1
     new Setting(containerEl)
       .setName('Level 1 Tag')
@@ -362,6 +440,13 @@ class WikiKitSettingTab extends PluginSettingTab {
           this.plugin.settings.level3 = value.trim() || 'subtype';
           await this.plugin.saveData(this.plugin.settings);
         }));
+    
+    // Helpful note about refreshing
+    containerEl.createEl('div', { 
+      text: '💡 Tip: Infobox settings changes require refreshing the page view to take effect. Switch to another note and back.',
+      cls: 'setting-item-description',
+      attr: { style: 'margin-top: 1rem; padding: 0.5rem; background: var(--background-secondary); border-radius: 4px; font-style: italic;' }
+    });
   }
 }
 

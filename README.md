@@ -52,6 +52,9 @@ image: CustomImage
 | `image`       | Custom base filename or URL            |
 | `strip_title` | Removes prefixes like `Folder - Title` |
 | `hidetable`   | If true, hides all frontmatter rows    |
+| `width`       | Override default infobox width         |
+| `margin_left` | Override default left margin           |
+| `margin_bottom` | Override default bottom margin       |
 
 ### Image Handling
 
@@ -95,11 +98,23 @@ level3: SubType
 
 Access via **Settings → Community Plugins → WikiKit**:
 
+### Infobox Settings
+
+* **Infobox Width**: Default width for infoboxes (default: `320px`)
+* **Infobox Margin Left**: Left margin for infoboxes (default: `2rem`)
+* **Infobox Margin Bottom**: Bottom margin for infoboxes (default: `1.5rem`)
+* **Strip Title Prefix**: Automatically remove prefixes like "Folder - " from titles (default: `true`)
+* **Default Exclude Keys**: Comma-separated list of frontmatter keys to hide by default (default: `tags,aliases,file,position,created,updated,Source`)
+
+### Tag Table Settings
+
 * **Level 1 Tag**: Top-level tag (default: `entity`)
 * **Level 2 Tag**: Middle group tag (default: `type`) 
 * **Level 3 Tag**: Subgroup tag (default: `subtype`)
 
-These settings apply globally unless overridden in individual tagtable blocks.
+These settings apply globally unless overridden in individual infobox or tagtable blocks.
+
+> **💡 Note**: Infobox settings changes require refreshing the page view to take effect. Simply switch to another note and back.
 
 ---
 
@@ -156,6 +171,17 @@ tags: [person/character]
 ```infobox
 caption: Main character
 exclude: tags,aliases
+```
+````
+
+### Infobox with Custom Styling
+````markdown
+```infobox
+caption: Character profile
+width: 280px
+margin_left: 1.5rem
+margin_bottom: 2rem
+exclude: tags,aliases,created
 ```
 ````
 
