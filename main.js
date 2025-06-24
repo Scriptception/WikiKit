@@ -18,9 +18,9 @@ const TAGTABLE_ICON_SVG = `
 const WIKIKIT_TAGTABLE_VIEW_TYPE = "wikikit-tagtable-sidebar";
 const DEFAULT_SETTINGS = {
   // Tag Table Settings
-  level1: 'entity',
-  level2: 'type',
-  level3: 'subtype',
+  level1: 'area',
+  level2: 'category',
+  level3: 'subcategory',
   // Infobox Settings
   infobox_width: '320px',
   infobox_margin_left: '2rem',
@@ -48,16 +48,16 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
   const frontmatter = cache?.frontmatter || {};
   const tags = (frontmatter.tags || []).map(t => t.toLowerCase());
   // Use settings or overrides for tag levels
-  const level1 = (overrides.level1 || plugin.settings.level1 || 'entity').toLowerCase();
-  const level2 = (overrides.level2 || plugin.settings.level2 || 'type').toLowerCase();
-  const level3 = (overrides.level3 || plugin.settings.level3 || 'subtype').toLowerCase();
-  const targetEntityTag = tags.find(tag => tag.startsWith(`${level1}/`));
-  if (!targetEntityTag) {
-    const level1Label = (overrides.level1 || plugin.settings.level1 || 'entity').replace(/^\w/, c => c.toUpperCase());
+  const level1 = (overrides.level1 || plugin.settings.level1 || 'area').toLowerCase();
+  const level2 = (overrides.level2 || plugin.settings.level2 || 'category').toLowerCase();
+  const level3 = (overrides.level3 || plugin.settings.level3 || 'subcategory').toLowerCase();
+  const targetAreaTag = tags.find(tag => tag.startsWith(`${level1}/`));
+  if (!targetAreaTag) {
+    const level1Label = (overrides.level1 || plugin.settings.level1 || 'area').replace(/^\w/, c => c.toUpperCase());
     container.innerHTML = `<p><em>No ${level1Label} tag found on this page.</em></p>`;
     return;
   }
-  // Group related pages by type/subtype
+  // Group related pages by category/subcategory
   const pages = plugin.app.vault.getMarkdownFiles();
   const groupedData = {};
   for (const page of pages) {
@@ -65,39 +65,39 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     if (!cache || !cache.frontmatter) continue;
     const fm = cache.frontmatter;
     const tags = (fm.tags || []).map(t => t.toLowerCase());
-    if (!tags.includes(targetEntityTag)) continue;
-    const typeTag = tags.find(tag => tag.startsWith(`${level2}/`));
-    if (!typeTag) continue;
-    const subTypeTag = tags.find(tag => tag.startsWith(`${level3}/`));
-    const type = typeTag;
-    const sub = subTypeTag || "—";
-    if (!groupedData[type]) groupedData[type] = {};
-    if (!groupedData[type][sub]) groupedData[type][sub] = [];
+    if (!tags.includes(targetAreaTag)) continue;
+    const categoryTag = tags.find(tag => tag.startsWith(`${level2}/`));
+    if (!categoryTag) continue;
+    const subCategoryTag = tags.find(tag => tag.startsWith(`${level3}/`));
+    const category = categoryTag;
+    const sub = subCategoryTag || "—";
+    if (!groupedData[category]) groupedData[category] = {};
+    if (!groupedData[category][sub]) groupedData[category][sub] = [];
     let title = fm.title || page.basename;
     title = title.replace(/^.* - /, '');
-    groupedData[type][sub].push({ name: title, path: page.path });
+    groupedData[category][sub].push({ name: title, path: page.path });
   }
   // Build table HTML
-  const title = targetEntityTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+  const title = targetAreaTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
   const tableWrapper = document.createElement("div");
   tableWrapper.className = "tagtable-wrapper sidebar";
   tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
   const table = document.createElement("table");
   table.className = "tagtable";
-  for (const [type, subGroups] of Object.entries(groupedData)) {
-    const typeRow = document.createElement("tr");
-    const typeCell = document.createElement("td");
-    typeCell.setAttribute("rowspan", Object.keys(subGroups).length);
-    typeCell.textContent = type.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
-    typeCell.className = "tagtable-type";
-    typeRow.appendChild(typeCell);
+  for (const [category, subGroups] of Object.entries(groupedData)) {
+    const categoryRow = document.createElement("tr");
+    const categoryCell = document.createElement("td");
+    categoryCell.setAttribute("rowspan", Object.keys(subGroups).length);
+    categoryCell.textContent = category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+    categoryCell.className = "tagtable-category";
+    categoryRow.appendChild(categoryCell);
     let first = true;
     for (const [sub, entries] of Object.entries(subGroups)) {
-      const row = first ? typeRow : document.createElement("tr");
+      const row = first ? categoryRow : document.createElement("tr");
       first = false;
       const subCell = document.createElement("td");
       subCell.textContent = sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
-      subCell.className = "tagtable-subtype";
+      subCell.className = "tagtable-subcategory";
       const entriesCell = document.createElement("td");
       entriesCell.innerHTML = entries
         .map(e => `<a href=\"#\" data-href=\"${e.path}\">${e.name}</a>`)
@@ -263,9 +263,9 @@ module.exports = class WikiKitPlugin extends Plugin {
       editorCallback: (editor) => {
         const block = [
           "```tagtable",
-          "level1: Entity",
-          "level2: Type",
-          "level3: SubType",
+          "level1: Area",
+          "level2: Category",
+          "level3: SubCategory",
           "```"
         ].join("\n");
         editor.replaceSelection(block + "\n");
@@ -410,34 +410,34 @@ class WikiKitSettingTab extends PluginSettingTab {
     // Level 1
     new Setting(containerEl)
       .setName('Level 1 Tag')
-      .setDesc('Top-level tag (e.g. entity)')
+      .setDesc('Top-level tag (e.g. area)')
       .addText(text => text
-        .setPlaceholder('entity')
+        .setPlaceholder('area')
         .setValue(this.plugin.settings.level1)
         .onChange(async (value) => {
-          this.plugin.settings.level1 = value.trim() || 'entity';
+          this.plugin.settings.level1 = value.trim() || 'area';
           await this.plugin.saveData(this.plugin.settings);
         }));
     // Level 2
     new Setting(containerEl)
       .setName('Level 2 Tag')
-      .setDesc('Middle group tag (e.g. type)')
+      .setDesc('Middle group tag (e.g. category)')
       .addText(text => text
-        .setPlaceholder('type')
+        .setPlaceholder('category')
         .setValue(this.plugin.settings.level2)
         .onChange(async (value) => {
-          this.plugin.settings.level2 = value.trim() || 'type';
+          this.plugin.settings.level2 = value.trim() || 'category';
           await this.plugin.saveData(this.plugin.settings);
         }));
     // Level 3
     new Setting(containerEl)
       .setName('Level 3 Tag')
-      .setDesc('Subgroup tag (e.g. subtype)')
+      .setDesc('Subgroup tag (e.g. subcategory)')
       .addText(text => text
-        .setPlaceholder('subtype')
+        .setPlaceholder('subcategory')
         .setValue(this.plugin.settings.level3)
         .onChange(async (value) => {
-          this.plugin.settings.level3 = value.trim() || 'subtype';
+          this.plugin.settings.level3 = value.trim() || 'subcategory';
           await this.plugin.saveData(this.plugin.settings);
         }));
     
