@@ -145,7 +145,7 @@ Edit `styles.css` to customize:
 ## 📝 Usage Examples
 
 ### Basic Infobox
-```markdown
+````markdown
 ---
 title: John Doe
 age: 30
@@ -157,16 +157,16 @@ tags: [person/character]
 caption: Main character
 exclude: tags,aliases
 ```
-```
+````
 
 ### Tag Table with Custom Levels
-```markdown
+````markdown
 ```tagtable
 level1: person
 level2: role
 level3: department
 ```
-```
+````
 
 ### Sidebar Integration
 1. Open any note with tags like `entity/character`
