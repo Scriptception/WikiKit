@@ -66,11 +66,16 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     const fm = cache.frontmatter;
     const tags = (fm.tags || []).map(t => t.toLowerCase());
     if (!tags.includes(targetAreaTag)) continue;
+    
+    // Find Level 2 and Level 3 tags (optional)
     const categoryTag = tags.find(tag => tag.startsWith(`${level2}/`));
-    if (!categoryTag) continue;
     const subCategoryTag = tags.find(tag => tag.startsWith(`${level3}/`));
-    const category = categoryTag;
-    const sub = subCategoryTag || "—";
+    
+    // Use "Uncategorized" for pages without Level 2 tag
+    const category = categoryTag || "Uncategorized";
+    // Use blank for pages without Level 3 tag
+    const sub = subCategoryTag || "";
+    
     if (!groupedData[category]) groupedData[category] = {};
     if (!groupedData[category][sub]) groupedData[category][sub] = [];
     let title = fm.title || page.basename;
@@ -88,7 +93,9 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     const categoryRow = document.createElement("tr");
     const categoryCell = document.createElement("td");
     categoryCell.setAttribute("rowspan", Object.keys(subGroups).length);
-    categoryCell.textContent = category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+    // Handle "Uncategorized" specially
+    const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+    categoryCell.textContent = categoryDisplay;
     categoryCell.className = "tagtable-category";
     categoryRow.appendChild(categoryCell);
     let first = true;
@@ -96,7 +103,9 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
       const row = first ? categoryRow : document.createElement("tr");
       first = false;
       const subCell = document.createElement("td");
-      subCell.textContent = sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+      // Handle blank subcategory
+      const subDisplay = sub === "" ? "" : sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+      subCell.textContent = subDisplay;
       subCell.className = "tagtable-subcategory";
       const entriesCell = document.createElement("td");
       entriesCell.innerHTML = entries
