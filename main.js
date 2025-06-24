@@ -300,7 +300,7 @@ module.exports = class WikiKitPlugin extends Plugin {
           "level1: Area",
           "level2: Category",
           "level3: SubCategory",
-          "first_only: false  # Set to 'true' to show only the first area table",
+          "first_only: false",
           "```"
         ].join("\n");
         editor.replaceSelection(block + "\n");
