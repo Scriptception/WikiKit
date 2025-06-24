@@ -131,7 +131,7 @@
 .tagtable-wrapper {
   margin: 1.5rem 0;
   background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--text-accent);
   border-radius: 8px;
   box-shadow: var(--shadow-s);
   overflow-x: auto;
@@ -146,6 +146,7 @@
   margin-bottom: 0.75em;
   border-bottom: 1px solid var(--background-modifier-border);
   padding-bottom: 0.25em;
+  text-align: center;
 }
 
 .tagtable {
