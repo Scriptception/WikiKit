@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS = {
   level1: 'area',
   level2: 'category',
   level3: 'subcategory',
+  table_spacing: '2rem',
   // Infobox Settings
   infobox_width: '320px',
   infobox_margin_left: '2rem',
@@ -47,79 +48,103 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
   const cache = plugin.app.metadataCache.getCache(filePath);
   const frontmatter = cache?.frontmatter || {};
   const tags = (frontmatter.tags || []).map(t => t.toLowerCase());
+  
   // Use settings or overrides for tag levels
   const level1 = (overrides.level1 || plugin.settings.level1 || 'area').toLowerCase();
   const level2 = (overrides.level2 || plugin.settings.level2 || 'category').toLowerCase();
   const level3 = (overrides.level3 || plugin.settings.level3 || 'subcategory').toLowerCase();
-  const targetAreaTag = tags.find(tag => tag.startsWith(`${level1}/`));
-  if (!targetAreaTag) {
+  
+  // Find ALL area tags (not just the first one)
+  const areaTags = tags.filter(tag => tag.startsWith(`${level1}/`));
+  
+  if (areaTags.length === 0) {
     const level1Label = (overrides.level1 || plugin.settings.level1 || 'area').replace(/^\w/, c => c.toUpperCase());
     container.innerHTML = `<p><em>No ${level1Label} tag found on this page.</em></p>`;
     return;
   }
-  // Group related pages by category/subcategory
-  const pages = plugin.app.vault.getMarkdownFiles();
-  const groupedData = {};
-  for (const page of pages) {
-    const cache = plugin.app.metadataCache.getCache(page.path);
-    if (!cache || !cache.frontmatter) continue;
-    const fm = cache.frontmatter;
-    const tags = (fm.tags || []).map(t => t.toLowerCase());
-    if (!tags.includes(targetAreaTag)) continue;
+
+  // Check if user wants only the first table
+  const firstOnly = overrides.first_only === "true";
+  const tagsToProcess = firstOnly ? areaTags.slice(0, 1) : areaTags;
+
+  // Create a table for each area tag
+  for (let i = 0; i < tagsToProcess.length; i++) {
+    const targetAreaTag = tagsToProcess[i];
     
-    // Find Level 2 and Level 3 tags (optional)
-    const categoryTag = tags.find(tag => tag.startsWith(`${level2}/`));
-    const subCategoryTag = tags.find(tag => tag.startsWith(`${level3}/`));
+    // Group related pages by category/subcategory for this area
+    const pages = plugin.app.vault.getMarkdownFiles();
+    const groupedData = {};
     
-    // Use "Uncategorized" for pages without Level 2 tag
-    const category = categoryTag || "Uncategorized";
-    // Use blank for pages without Level 3 tag
-    const sub = subCategoryTag || "";
-    
-    if (!groupedData[category]) groupedData[category] = {};
-    if (!groupedData[category][sub]) groupedData[category][sub] = [];
-    let title = fm.title || page.basename;
-    title = title.replace(/^.* - /, '');
-    groupedData[category][sub].push({ name: title, path: page.path });
-  }
-  // Build table HTML
-  const title = targetAreaTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
-  const tableWrapper = document.createElement("div");
-  tableWrapper.className = "tagtable-wrapper sidebar";
-  tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
-  const table = document.createElement("table");
-  table.className = "tagtable";
-  for (const [category, subGroups] of Object.entries(groupedData)) {
-    const categoryRow = document.createElement("tr");
-    const categoryCell = document.createElement("td");
-    categoryCell.setAttribute("rowspan", Object.keys(subGroups).length);
-    // Handle "Uncategorized" specially
-    const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
-    categoryCell.textContent = categoryDisplay;
-    categoryCell.className = "tagtable-category";
-    categoryRow.appendChild(categoryCell);
-    let first = true;
-    for (const [sub, entries] of Object.entries(subGroups)) {
-      const row = first ? categoryRow : document.createElement("tr");
-      first = false;
-      const subCell = document.createElement("td");
-      // Handle blank subcategory
-      const subDisplay = sub === "" ? "" : sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
-      subCell.textContent = subDisplay;
-      subCell.className = "tagtable-subcategory";
-      const entriesCell = document.createElement("td");
-      entriesCell.innerHTML = entries
-        .map(e => `<a href=\"#\" data-href=\"${e.path}\">${e.name}</a>`)
-        .join(" · ");
-      row.appendChild(subCell);
-      row.appendChild(entriesCell);
-      table.appendChild(row);
+    for (const page of pages) {
+      const cache = plugin.app.metadataCache.getCache(page.path);
+      if (!cache || !cache.frontmatter) continue;
+      const fm = cache.frontmatter;
+      const pageTags = (fm.tags || []).map(t => t.toLowerCase());
+      if (!pageTags.includes(targetAreaTag)) continue;
+      
+      // Find Level 2 and Level 3 tags (optional)
+      const categoryTag = pageTags.find(tag => tag.startsWith(`${level2}/`));
+      const subCategoryTag = pageTags.find(tag => tag.startsWith(`${level3}/`));
+      
+      // Use "Uncategorized" for pages without Level 2 tag
+      const category = categoryTag || "Uncategorized";
+      // Use blank for pages without Level 3 tag
+      const sub = subCategoryTag || "";
+      
+      if (!groupedData[category]) groupedData[category] = {};
+      if (!groupedData[category][sub]) groupedData[category][sub] = [];
+      let title = fm.title || page.basename;
+      title = title.replace(/^.* - /, '');
+      groupedData[category][sub].push({ name: title, path: page.path });
     }
+    
+    // Build table HTML for this area
+    const title = targetAreaTag.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+    const tableWrapper = document.createElement("div");
+    tableWrapper.className = "tagtable-wrapper sidebar";
+    
+    // Add spacing between multiple tables
+    if (i > 0) {
+      tableWrapper.style.marginTop = plugin.settings.table_spacing || '2rem';
+    }
+    
+    tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
+    const table = document.createElement("table");
+    table.className = "tagtable";
+    
+    for (const [category, subGroups] of Object.entries(groupedData)) {
+      const categoryRow = document.createElement("tr");
+      const categoryCell = document.createElement("td");
+      categoryCell.setAttribute("rowspan", Object.keys(subGroups).length);
+      // Handle "Uncategorized" specially
+      const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : category.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+      categoryCell.textContent = categoryDisplay;
+      categoryCell.className = "tagtable-category";
+      categoryRow.appendChild(categoryCell);
+      let first = true;
+      for (const [sub, entries] of Object.entries(subGroups)) {
+        const row = first ? categoryRow : document.createElement("tr");
+        first = false;
+        const subCell = document.createElement("td");
+        // Handle blank subcategory
+        const subDisplay = sub === "" ? "" : sub.split("/").slice(-1)[0].replace(/\b\w/g, c => c.toUpperCase());
+        subCell.textContent = subDisplay;
+        subCell.className = "tagtable-subcategory";
+        const entriesCell = document.createElement("td");
+        entriesCell.innerHTML = entries
+          .map(e => `<a href=\"#\" data-href=\"${e.path}\">${e.name}</a>`)
+          .join(" · ");
+        row.appendChild(subCell);
+        row.appendChild(entriesCell);
+        table.appendChild(row);
+      }
+    }
+    tableWrapper.appendChild(table);
+    container.appendChild(tableWrapper);
   }
-  tableWrapper.appendChild(table);
-  container.appendChild(tableWrapper);
-  // Link handling
-  tableWrapper.querySelectorAll("a[data-href]").forEach(link => {
+  
+  // Link handling for all tables
+  container.querySelectorAll("a[data-href]").forEach(link => {
     link.addEventListener("click", (evt) => {
       evt.preventDefault();
       const targetPath = link.getAttribute("data-href");
@@ -275,6 +300,7 @@ module.exports = class WikiKitPlugin extends Plugin {
           "level1: Area",
           "level2: Category",
           "level3: SubCategory",
+          "first_only: false  # Set to 'true' to show only the first area table",
           "```"
         ].join("\n");
         editor.replaceSelection(block + "\n");
@@ -447,6 +473,18 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.level3)
         .onChange(async (value) => {
           this.plugin.settings.level3 = value.trim() || 'subcategory';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Table Spacing
+    new Setting(containerEl)
+      .setName('Table Spacing')
+      .setDesc('Spacing between multiple area tables (e.g. 2rem, 20px)')
+      .addText(text => text
+        .setPlaceholder('2rem')
+        .setValue(this.plugin.settings.table_spacing)
+        .onChange(async (value) => {
+          this.plugin.settings.table_spacing = value.trim() || '2rem';
           await this.plugin.saveData(this.plugin.settings);
         }));
     

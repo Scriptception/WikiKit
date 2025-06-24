@@ -80,17 +80,22 @@ level3: SubType
 ### Tag Table Behavior
 
 * Scans all notes that share the same `level1` tag as the current page
+* **Supports multiple area tags** - displays separate tables for each area tag found on the page
+* **Respects tag order** - tables appear in the same order as tags in frontmatter
 * Groups entries by `level2`, then `level3` (optional)
 * Titles, types, and subtypes are capitalized
 * Titles are stripped like infoboxes (default)
 
 ### Tag Table Parameters
 
-| Key      | Description                    |
-| -------- | ------------------------------ |
-| `level1` | Top-level tag (e.g. `Entity`)  |
-| `level2` | Middle group tag (e.g. `Type`) |
-| `level3` | Subgroup tag (e.g. `SubType`)  |
+| Key         | Description                                    |
+| ----------- | ---------------------------------------------- |
+| `level1`    | Top-level tag (e.g. `Entity`)                  |
+| `level2`    | Middle group tag (e.g. `Type`)                 |
+| `level3`    | Subgroup tag (e.g. `SubType`)                  |
+| `first_only`| If `true`, shows only the first area table     |
+
+> **💡 Note**: By default, all area tables are displayed. Use `first_only: true` to show only the first area table.
 
 ---
 
@@ -111,6 +116,7 @@ Access via **Settings → Community Plugins → WikiKit**:
 * **Level 1 Tag**: Top-level tag (default: `entity`)
 * **Level 2 Tag**: Middle group tag (default: `type`) 
 * **Level 3 Tag**: Subgroup tag (default: `subtype`)
+* **Table Spacing**: Spacing between multiple area tables (default: `2rem`)
 
 These settings apply globally unless overridden in individual infobox or tagtable blocks.
 
@@ -194,8 +200,37 @@ level3: department
 ```
 ````
 
+### Multiple Area Tags Example
+````markdown
+---
+title: Project Alpha
+tags: [area/project, area/research, category/software, subcategory/web]
+---
+
+```tagtable
+level1: area
+level2: category
+level3: subcategory
+```
+````
+This will display two separate tables: one for "Project" and one for "Research", each showing related pages grouped by category and subcategory.
+
+### Show Only First Area Table
+````markdown
+```tagtable
+level1: area
+level2: category
+level3: subcategory
+first_only: true
+```
+````
+This will display only the first area table, even if the note has multiple area tags.
+
 ### Sidebar Integration
 1. Open any note with tags like `entity/character`
 2. Click the ribbon table icon
 3. See all related pages grouped by type/subtype
 
+## TODO
+
+- Seems to break if empty (malformed) tage in frontmatter (i.e. empty tag: ` - `)
