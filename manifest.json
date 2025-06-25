@@ -1,10 +1,10 @@
 {
   "id": "wikikit",
   "name": "WikiKit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "ScriptCeption",
   "authorUrl": "https://github.com/ScriptCeption",
-  "description": "Wiki-Style modules for obsidian, such as Infobox, Related Pages, etc...",
+  "description": "Wiki-Style modules for obsidian, such as Infobox, Related Pages, Tag Tables, and Tag Links...",
   "main": "main.js",
   "minAppVersion": "1.0.0"
 }

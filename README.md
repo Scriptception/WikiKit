@@ -80,7 +80,7 @@ level3: SubType
 ### Tag Table Behavior
 
 * Scans all notes that share the same `level1` tag as the current page
-* **Supports multiple area tags** - displays separate tables for each area tag found on the page
+* **Supports multiple area tags** - displays separate tables for each area tag found on the page (except for the 'Create Links from Tag Table' command, which only uses the first area tag)
 * **Respects tag order** - tables appear in the same order as tags in frontmatter
 * Groups entries by `level2`, then `level3` (optional)
 * **Formats tag names** - replaces underscores with spaces and capitalizes all words (e.g., `video_games` → `Video Games`)
@@ -144,7 +144,7 @@ The plugin includes a **Tag Table Sidebar** that:
 ### Accessing the Sidebar
 
 * Click the **table icon** in the ribbon
-* Use command: **"Show Tag Table Sidebar"**
+* Use command: **"WikiKit: Show Tag Table Sidebar"**
 * Automatically appears on the right side
 
 ---
@@ -153,9 +153,10 @@ The plugin includes a **Tag Table Sidebar** that:
 
 Use via command palette:
 
-* **Insert Infobox** - Adds infobox template
-* **Insert Tag Table** - Adds tagtable template  
-* **Show Tag Table Sidebar** - Opens sidebar view
+* **WikiKit: Insert Infobox** - Adds infobox template
+* **WikiKit: Insert Tag Table** - Adds tagtable template
+* **WikiKit: Show Tag Table Sidebar** - Opens sidebar view
+* **WikiKit: Create Links from Tag Table** - Generates hard-coded links at cursor position for navigation or graph view
 
 ---
 
@@ -256,6 +257,11 @@ This will display:
 1. Open any note with tags like `entity/character`
 2. Click the ribbon table icon
 3. See all related pages grouped by type/subtype
+
+### Create Links from Tag Table Command
+1. Open any note with area tags
+2. Use command: **"WikiKit: Create Links from Tag Table"**
+3. Hard-coded links are inserted at the cursor position, perfect for navigation sections or for Obsidian's graph view
 
 ## TODO
 

@@ -1,7 +1,7 @@
 // wikikit-plugin/main.js
 // WikiKit: Professional, clean, and well-documented Obsidian plugin for infoboxes and tag tables
 
-const { Plugin, WorkspaceLeaf, Setting, PluginSettingTab, ItemView } = require("obsidian");
+const { Plugin, WorkspaceLeaf, Setting, PluginSettingTab, ItemView, Notice } = require("obsidian");
 
 // --- Constants & Defaults ---
 const TAGTABLE_ICON_ID = "wikikit-tagtable";
@@ -251,6 +251,109 @@ function renderInfobox(plugin, source, el, ctx) {
   el.style.display = "none";
 }
 
+// --- Helper: Generate Links from Tag Table Data ---
+async function generateLinksFromTagTable(plugin, filePath, overrides = {}) {
+  const cache = plugin.app.metadataCache.getCache(filePath);
+  const frontmatter = cache?.frontmatter || {};
+  const tags = (frontmatter.tags || []).map(t => t.toLowerCase());
+  
+  // Use settings or overrides for tag levels
+  const level1 = (overrides.level1 || plugin.settings.level1 || 'area').toLowerCase();
+  const level2 = (overrides.level2 || plugin.settings.level2 || 'category').toLowerCase();
+  const level3 = (overrides.level3 || plugin.settings.level3 || 'subcategory').toLowerCase();
+  
+  // Find ALL area tags (not just the first one)
+  const areaTags = tags.filter(tag => tag.startsWith(`${level1}/`));
+  
+  if (areaTags.length === 0) {
+    return "No area tags found on this page.";
+  }
+
+  // Always only process the first area tag if there are multiple
+  const tagsToProcess = areaTags.slice(0, 1);
+
+  let result = "";
+  
+  // Process the first area tag only
+  for (let i = 0; i < tagsToProcess.length; i++) {
+    const targetAreaTag = tagsToProcess[i];
+    
+    // Group related pages by category/subcategory for this area
+    const pages = plugin.app.vault.getMarkdownFiles();
+    const groupedData = {};
+    
+    for (const page of pages) {
+      const cache = plugin.app.metadataCache.getCache(page.path);
+      if (!cache || !cache.frontmatter) continue;
+      const fm = cache.frontmatter;
+      const pageTags = (fm.tags || []).map(t => t.toLowerCase());
+      if (!pageTags.includes(targetAreaTag)) continue;
+      
+      // Find Level 2 and Level 3 tags (optional)
+      const categoryTag = pageTags.find(tag => tag.startsWith(`${level2}/`));
+      const subCategoryTag = pageTags.find(tag => tag.startsWith(`${level3}/`));
+      
+      // Use "Uncategorized" for pages without Level 2 tag
+      const category = categoryTag || "Uncategorized";
+      // Use blank for pages without Level 3 tag
+      const sub = subCategoryTag || "";
+      
+      if (!groupedData[category]) groupedData[category] = {};
+      if (!groupedData[category][sub]) groupedData[category][sub] = [];
+      let displayName = fm.title || page.basename;
+      // Strip prefix for display only
+      displayName = displayName.replace(/^.* - /, '');
+      groupedData[category][sub].push({ name: displayName, path: page.path, basename: page.basename });
+    }
+    
+    // Sort categories alphabetically, with "Uncategorized" always first
+    const sortedCategories = Object.keys(groupedData).sort((a, b) => {
+      if (a === "Uncategorized") return -1;
+      if (b === "Uncategorized") return 1;
+      return a.localeCompare(b);
+    });
+    
+    // Generate markdown links
+    for (const category of sortedCategories) {
+      const subGroups = groupedData[category];
+      const categoryDisplay = category === "Uncategorized" ? "Uncategorized" : formatTagName(category.split("/").slice(-1)[0]);
+      
+      // Add category header
+      result += `\n## ${categoryDisplay}\n\n`;
+      
+      // Sort subcategories alphabetically, with empty string (no subcategory) first
+      const sortedSubCategories = Object.keys(subGroups).sort((a, b) => {
+        if (a === "") return -1;
+        if (b === "") return 1;
+        return a.localeCompare(b);
+      });
+      
+      for (const sub of sortedSubCategories) {
+        const entries = subGroups[sub];
+        
+        // Add subcategory header if it exists
+        if (sub !== "") {
+          const subDisplay = formatTagName(sub.split("/").slice(-1)[0]);
+          result += `### ${subDisplay}\n`;
+        }
+        
+        // Add links
+        for (const entry of entries) {
+          // Use full page name for link, displayName for text
+          result += `- [[${entry.basename}|${entry.name}]]\n`;
+        }
+        
+        // Add spacing after subcategory
+        if (sub !== "") {
+          result += "\n";
+        }
+      }
+    }
+  }
+  
+  return result.trim();
+}
+
 // --- Main Plugin Class ---
 module.exports = class WikiKitPlugin extends Plugin {
   async onload() {
@@ -301,7 +404,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     // Insert Infobox template command
     this.addCommand({
       id: "insert-infobox",
-      name: "Insert Infobox",
+      name: "WikiKit: Insert Infobox",
       editorCallback: (editor) => {
         const template = [
           "```infobox",
@@ -317,7 +420,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     // Insert TagTable template command
     this.addCommand({
       id: "insert-tag-table",
-      name: "Insert Tag Table",
+      name: "WikiKit: Insert Tag Table",
       editorCallback: (editor) => {
         const block = [
           "```tagtable",
@@ -328,6 +431,33 @@ module.exports = class WikiKitPlugin extends Plugin {
           "```"
         ].join("\n");
         editor.replaceSelection(block + "\n");
+      }
+    });
+    // Create links from tag table command
+    this.addCommand({
+      id: "create-links-from-tag-table",
+      name: "Create Links from Tag Table",
+      editorCallback: async (editor) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice("No active file found.");
+          return;
+        }
+        
+        try {
+          const links = await generateLinksFromTagTable(this, file.path);
+          if (links === "No area tags found on this page.") {
+            new Notice("No area tags found on this page.");
+            return;
+          }
+          
+          // Insert the generated links at cursor position
+          editor.replaceSelection(links);
+          new Notice("Links generated successfully!");
+        } catch (error) {
+          console.error("Error generating links:", error);
+          new Notice("Error generating links. Check console for details.");
+        }
       }
     });
   }
