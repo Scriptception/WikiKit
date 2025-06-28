@@ -318,7 +318,7 @@
 }
 
 .vaultmap-table tbody tr:nth-child(even) {
-  background-color: var(--background-secondary);
+  background-color: var(--background-primary-alt);
 }
 
 .vaultmap-table thead tr,
