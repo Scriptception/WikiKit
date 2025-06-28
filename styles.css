@@ -1,3 +1,6 @@
+/*---------------------------------------*/
+/* -------------- INFOBOX -------------- */
+/*---------------------------------------*/
 .infobox-wrapper {
   float: right;
   clear: right;
@@ -58,26 +61,68 @@
   background-color: var(--background-secondary);
   border: 1px solid var(--text-accent);
   border-radius: 8px;
-  padding: 1em;
   box-shadow: var(--shadow-s);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--text-normal);
-  text-align: left;
+  padding: 1em;
   margin: 0 auto;
+  text-align: center;
 }
 
+/* --- INFOBOX TITLE --- */
 .infobox-float .callout-title {
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-accent);
-  margin-bottom: 0.75em;
-  border-bottom: 1px solid var(--background-modifier-border);
+  text-align: center;
+  /*border-bottom: 1px solid var(--text-accent);*/
   padding-bottom: 0.25em;
+  text-shadow: 0 0 5px var(--text-accent), 0 0 10x var(--text-accent), 0 0 15px var(--text-accent);
 }
+
+/* --- DETAILS SECTION HEADER --- */
+.infobox-section-header {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-accent);
+  text-align: center;
+  margin: 1em 0 0.5em 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.2em;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+}
+
+/* --- INFOBOX TABLE --- */
+.infobox-float table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  background: none;
+  box-shadow: 8px 8px 8px 0 rgba(0,0,0,0.10);
+  border-radius: 0px;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.infobox-float td {
+  padding: 0.4em 0.5em;
+  vertical-align: middle;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.infobox-float td:first-child {
+  color: var(--text-normal);
+  font-weight: 600;
+  text-align: center;
+  width: 38%;
+  background-color: var(--background-modifier-box-shadow);
+}
+
+.infobox-float td:not(:first-child) {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-box-shadow);
+}
+
 
 .infobox-float img {
   display: block;
@@ -95,39 +140,9 @@
   text-align: center;
 }
 
-.infobox-section-header {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin: 1em 0 0.5em;
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 0.2em;
-  text-align: center;
-}
-
-.infobox-float table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-.infobox-float td {
-  padding: 0.4em 0.5em;
-  vertical-align: top;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-.infobox-float tr:first-child td {
-  border-top: none;
-}
-
-.infobox-float td:first-child {
-  color: var(--text-muted);
-  font-weight: 600;
-  width: 38%;
-}
-
+/*---------------------------------------*/
+/* ------------- TAG TABLE ------------- */
+/*---------------------------------------*/
 .tagtable-wrapper {
   margin: 1.5rem 0;
   background-color: var(--background-secondary);
@@ -142,7 +157,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-accent);
-  text-align: left;
+  text-align: center;
   margin-bottom: 0.75em;
   border-bottom: 1px solid var(--background-modifier-border);
   padding-bottom: 0.25em;
@@ -271,9 +286,10 @@
   border-collapse: collapse;
   font-size: 0.9rem;
   background-color: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
+  border: 0.5px solid var(--background-modifier-border);
   border-radius: 6px;
   overflow: hidden;
+  box-shadow: 8px 8px 8px 0 rgba(0,0,0,0.10);
 }
 
 .vaultmap-table th {
