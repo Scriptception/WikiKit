@@ -292,15 +292,20 @@
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.9rem;
-  background-color: var(--background-primary);
+  /*background-color: var(--background-primary-alt);*/
   border: 0.2px solid var(--background-modifier-border);
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0px 0px 8px 5px rgba(0,0,0,0.10);
+  box-shadow: 0px 0px 2px 4px rgba(0,0,0,0.10);
+}
+
+/* 1. HEADER ROW - Sets the background color for table headers */
+.vaultmap-table thead tr,
+.vaultmap-table thead th {
+  background-color: var(--background-secondary-alt);
 }
 
 .vaultmap-table th {
-  background-color: var(--background-secondary-alt);
   color: var(--text-accent);
   font-weight: 600;
   padding: 0.75em 1em;
@@ -313,34 +318,27 @@
   letter-spacing: 0.5px;
 }
 
+/* 2. ALTERNATING ROW COLORS - Sets the background colors for alternating table rows */
 .vaultmap-table tr {
-  background-color: inherit;
+  background-color: var(--background-primary);
 }
 
 .vaultmap-table tbody tr:nth-child(even) {
-  background-color: var(--background-primary-alt);
-}
-
-.vaultmap-table thead tr,
-.vaultmap-table thead th {
-  background-color: var(--background-secondary-alt) !important;
+  background-color: var(--background-secondary);
 }
 
 .vaultmap-table td,
 .vaultmap-table th {
   padding: 0.75em 1em;
   vertical-align: middle;
-  border-bottom: 1.5px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-bottom: 1px solid var(--background-modifier-border);
   border-left: none;
   border-right: none;
+  color: var(--text-normal);
 }
 
 .vaultmap-table tr:last-child td {
   border-bottom: none;
-}
-
-.vaultmap-table tr:hover {
-  background-color: var(--background-modifier-hover);
 }
 
 .vaultmap-table a {
@@ -377,7 +375,7 @@
 }
 
 .vaultmap-stat {
-  background-color: var(--background-primary);
+  background-color: var(--background-primary-alt) !important;
   padding: 1rem;
   border-radius: 6px;
   border: 1px solid var(--background-modifier-border);
