@@ -9,6 +9,7 @@
   margin-bottom: 1.5rem;
   position: relative;
   z-index: 10;
+  padding: 0;
 }
 
 /* MOBILE STYLES */
@@ -46,6 +47,7 @@
     display: block;
     margin: 0.75em auto !important;
     border-radius: 8px;
+    box-shadow: 0px 0px 4px 4px rgba(0,0,0,0.10);
   }
 
   .infobox-caption,
@@ -95,32 +97,38 @@
 /* --- INFOBOX TABLE --- */
 .infobox-float table {
   width: 100%;
-  border-collapse: collapse;
+  border-spacing: 0;
   font-size: 0.95rem;
   background: none;
-  box-shadow: 8px 8px 8px 0 rgba(0,0,0,0.10);
-  border-radius: 0px;
+  box-shadow: 0px 0px 2px 4px rgba(0,0,0,0.10);
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--background-modifier-border);
+  border-collapse: collapse;
+  border-top: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-bottom: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-left: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-right: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 .infobox-float td {
   padding: 0.4em 0.5em;
   vertical-align: middle;
-  border: 1px solid var(--background-modifier-border);
 }
 
 .infobox-float td:first-child {
   color: var(--text-normal);
   font-weight: 600;
-  text-align: center;
+  text-align: right;
   width: 38%;
-  background-color: var(--background-modifier-box-shadow);
+  /*background-color: var(--background-modifier-box-shadow);*/
+  /*border-right: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));*/
 }
 
 .infobox-float td:not(:first-child) {
-  color: var(--text-normal);
-  background-color: var(--background-modifier-box-shadow) !important;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+  /*background-color: var(--background-modifier-box-shadow) !important;*/
 }
 
 
@@ -130,6 +138,7 @@
   height: auto;
   border-radius: 8px;
   margin: 0.75em 0;
+  box-shadow: 0px 0px 4px 4px rgba(0,0,0,0.10);
 }
 
 .infobox-caption {
@@ -283,13 +292,14 @@
 
 .vaultmap-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.9rem;
   background-color: var(--background-primary);
-  border: 0.5px solid var(--background-modifier-border);
+  border: 0.2px solid var(--background-modifier-border);
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 8px 8px 8px 0 rgba(0,0,0,0.10);
+  box-shadow: 0px 0px 8px 5px rgba(0,0,0,0.10);
 }
 
 .vaultmap-table th {
@@ -299,6 +309,8 @@
   padding: 0.75em 1em;
   text-align: left;
   border-bottom: 2px solid var(--background-modifier-border);
+  border-left: none;
+  border-right: none;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -322,6 +334,8 @@
   padding: 0.75em 1em;
   vertical-align: middle;
   border-bottom: 1.5px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-left: none;
+  border-right: none;
 }
 
 .vaultmap-table tr:last-child td {
@@ -519,11 +533,6 @@
     padding: 0.4em 0.5em;
     font-size: 0.75rem;
   }
-}
-
-.vaultmap-table td:not(:last-child),
-.vaultmap-table th:not(:last-child) {
-  border-right: 1.5px solid var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 /* Vertically center all cell text */
