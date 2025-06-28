@@ -29,8 +29,8 @@
     box-sizing: border-box;
     background-color: var(--background-secondary);
     border: 1px solid var(--text-accent);
-    border-radius: 10px;
-    padding: 1.25em;
+    border-radius: 8px;
+    padding: 1em;
     box-shadow: var(--shadow-s);
     font-size: 0.95rem;
     line-height: 1.6;
@@ -57,8 +57,8 @@
 .infobox-float {
   background-color: var(--background-secondary);
   border: 1px solid var(--text-accent);
-  border-radius: 10px;
-  padding: 1.25em;
+  border-radius: 8px;
+  padding: 1em;
   box-shadow: var(--shadow-s);
   font-size: 0.95rem;
   line-height: 1.6;
@@ -72,9 +72,11 @@
   width: 100%;
   text-align: center;
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--text-accent);
   margin-bottom: 0.75em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.25em;
 }
 
 .infobox-float img {
@@ -107,11 +109,11 @@
 .infobox-float table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .infobox-float td {
-  padding: 0.5em 0.6em;
+  padding: 0.4em 0.5em;
   vertical-align: top;
   border-top: 1px solid var(--background-modifier-border);
 }
@@ -122,11 +124,9 @@
 
 .infobox-float td:first-child {
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 600;
   width: 38%;
 }
-
-
 
 .tagtable-wrapper {
   margin: 1.5rem 0;
@@ -156,7 +156,7 @@
 }
 
 .tagtable td {
-  padding: 0.6em 0.8em;
+  padding: 0.4em 0.5em;
   vertical-align: top;
   border-top: 1px solid var(--background-modifier-border);
 }
@@ -181,9 +181,40 @@
   white-space: nowrap;
 }
 
+.tagtable-category {
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-normal);
+  width: 20%;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  text-align: center;
+}
+
+.tagtable-subcategory {
+  font-style: italic;
+  color: var(--text-muted);
+  width: 15%;
+  text-transform: capitalize;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
 .tagtable a {
   color: var(--text-accent);
   text-decoration: none;
+  position: relative;
+  padding-left: 1.2em;
+  display: inline-block;
+  margin-bottom: 0.2em;
+}
+
+.tagtable a::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--text-faint);
+  font-size: 0.8em;
 }
 
 .tagtable a:hover {

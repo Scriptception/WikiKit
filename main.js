@@ -161,10 +161,10 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
       categoryCell.className = "tagtable-category";
       categoryRow.appendChild(categoryCell);
       
-      // Sort subcategories alphabetically, with empty string (no subcategory) first
+      // Sort subcategories alphabetically, with empty string (no subcategory) last
       const sortedSubCategories = Object.keys(subGroups).sort((a, b) => {
-        if (a === "") return -1;
-        if (b === "") return 1;
+        if (a === "") return 1;
+        if (b === "") return -1;
         return a.localeCompare(b);
       });
       
@@ -175,13 +175,13 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
         first = false;
         const subCell = document.createElement("td");
         // Handle blank subcategory
-        const subDisplay = sub === "" ? "" : formatTagName(sub.split("/").slice(-1)[0]);
+        const subDisplay = sub === "" ? "—" : formatTagName(sub.split("/").slice(-1)[0]);
         subCell.textContent = subDisplay;
         subCell.className = "tagtable-subcategory";
         const entriesCell = document.createElement("td");
         entriesCell.innerHTML = entries
           .map(e => `<a href=\"#\" data-href=\"${e.path}\">${e.name}</a>`)
-          .join(" · ");
+          .join("<br>");
         row.appendChild(subCell);
         row.appendChild(entriesCell);
         table.appendChild(row);
