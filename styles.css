@@ -98,7 +98,7 @@
   width: 100%;
   border-spacing: 0;
   font-size: 0.95rem;
-  background-color: var(--background-primary);
+  background-color: var(--background-primary-alt);
   border-radius: 6px;
   overflow: hidden;
   border-collapse: collapse;
