@@ -107,6 +107,132 @@ level3: SubType
 
 ---
 
+## 🗺️ Vault Map
+
+Get a high-level overview of your entire vault's content structure. Perfect for home pages and navigation hubs.
+
+Add this code block to any note:
+
+````markdown
+```vaultmap
+show_metadata: true
+sort_by: created
+group_by: area
+compact_view: false
+```
+````
+
+### Vault Map Behavior
+
+* **Scans entire vault** for Collections (`Zettel/Collection`) and Topics (`Zettel/Topic`)
+* **Groups by Areas** using your existing `Area/` tags
+* **Two view modes**: Detailed tables or compact overview
+* **Interactive links** to navigate directly to any collection or topic
+* **Metadata display** including creation dates, status, and content counts
+* **Responsive design** that works on desktop and mobile
+
+### Vault Map Parameters
+
+| Key                 | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `show_metadata`     | Display created date, status, and counts (default: `true`) |
+| `sort_by`           | Sort order: `created`, `modified`, `name`, `status` (default: `created`) |
+| `group_by`          | Grouping: `area`, `status`, `none` (default: `area`) |
+| `compact_view`      | Use compact overview instead of detailed tables (default: `false`) |
+| `collection_tag`    | Override collection tag (default: from settings) |
+| `topic_tag`         | Override topic tag (default: from settings) |
+| `track_tags`        | Override trackable tags (default: from settings) |
+| `shorten_tracked_tag_names` | Show only the last part of each tracked tag as the column name (default: from settings) |
+| `status_enabled`    | Enable/disable status tracking (default: from settings) |
+| `status_property`   | Override status property (default: from settings) |
+
+### View Modes
+
+#### Detailed View (Default)
+Shows comprehensive tables with:
+* **Collections table**: Name, Area, Items count (child pages), Created date, Status
+* **Topics table**: Name, Area, [Trackable Tags], Created date, Status
+* **Summary statistics**: Total pages, collections, topics, and level tag counts
+
+> **💡 Items Field**: Shows the number of pages that link to each collection (child pages). This helps you see how many items are actually contained within each collection.
+
+> **💡 Trackable Tags**: Counts pages within the same area that have specific tags. For example, if you track `zettel/molecule` and `zettel/atom`, it will count how many pages in the same area have those tags, giving you insight into the topic's content structure. If 'Shorten Tracked Tag Names' is enabled, only the last part of each tag will be shown as the column name.
+
+#### Compact View
+Shows area-based overview with:
+* **Area sections**: Grouped by your `Area/` tags
+* **Inline links**: Collections and topics listed under each area
+* **Quick stats**: Summary with total pages and level tag counts
+
+### Vault Map Sidebar
+
+Access a dedicated sidebar view via:
+* **Ribbon icon** (map icon)
+* **Command palette**: "WikiKit: Show Vault Map Sidebar"
+
+The sidebar provides:
+* **Real-time updates** as you navigate between files
+* **Search functionality** (coming soon)
+* **Quick navigation** to any collection or topic
+* **Recent activity** tracking
+
+> **💡 Pro Tip**: Use the Vault Map on your home page or dashboard note for instant vault overview and navigation!
+
+> **🎯 Perfect for**: Home pages, dashboards, navigation hubs, and getting a quick sense of your vault's content structure.
+
+#### Home Page Dashboard
+Perfect for your vault's home page or dashboard:
+
+````markdown
+# 🏠 My Knowledge Vault
+
+Welcome to my digital garden! Here's what I'm working on:
+
+## 📊 Vault Overview
+```vaultmap
+compact_view: true
+sort_by: modified
+group_by: area
+```
+
+## 🎯 Quick Navigation
+- [[Collections]] - Browse all my collections
+- [[Topics]] - Explore topics I'm researching
+- [[Recent]] - Recently updated content
+````
+
+This creates a beautiful, interactive dashboard that gives you instant insight into your vault's structure and content.
+
+#### Custom Tag Configuration
+For users with different naming conventions:
+
+````markdown
+```vaultmap
+collection_tag: project/collection
+topic_tag: research/topic
+track_tags: priority,type,source
+status_enabled: true
+status_property: priority
+```
+````
+
+#### Zettelkasten with Molecules and Atoms
+For advanced Zettelkasten workflows:
+
+````markdown
+```vaultmap
+collection_tag: zettel/collection
+topic_tag: zettel/topic
+track_tags: zettel/molecule,zettel/atom,zettel/source
+status_enabled: true
+status_property: status
+```
+````
+
+This would show columns for Molecules, Atoms, and Sources in the topics table, perfect for tracking different types of knowledge components.
+
+---
+
 ## 🔧 Settings
 
 Access via **Settings → Community Plugins → WikiKit**:
@@ -126,25 +252,46 @@ Access via **Settings → Community Plugins → WikiKit**:
 * **Level 3 Tag**: Subgroup tag (default: `subtype`)
 * **Table Spacing**: Spacing between multiple area tables (default: `2rem`)
 
-These settings apply globally unless overridden in individual infobox or tagtable blocks.
+### Vault Map Settings
 
-> **💡 Note**: Infobox settings changes require refreshing the page view to take effect. Simply switch to another note and back.
+* **Collection Tag**: Tag used to identify collection pages (default: `zettel/collection`)
+* **Topic Tag**: Tag used to identify topic pages (default: `zettel/topic`)
+* **Track Tags**: Comma-separated list of tag prefixes to count in topics table (default: `status,context,lens`)
+* **Shorten Tracked Tag Names**: If enabled, only the last part of each tracked tag (e.g. "Atom" from "zettel/atom") will be shown as the column name in the topics table (default: `true`)
+* **Enable Status Tracking**: Show status column in vault map tables (default: `true`)
+* **Status Property**: Tag prefix to use for status (default: `status`)
+* **Show Metadata**: Display created date, status, and counts in vault map tables (default: `true`)
+* **Default Sort Order**: How to sort collections and topics (default: `created`)
+* **Default Grouping**: How to group content (default: `area`)
+* **Default Compact View**: Use compact overview instead of detailed tables (default: `false`)
+
+These settings apply globally unless overridden in individual infobox, tagtable, or vaultmap blocks.
+
+> **💡 Note**: Settings changes require refreshing the page view to take effect. Simply switch to another note and back.
 
 ---
 
-## 📋 Sidebar View
+## 📋 Sidebar Views
 
-The plugin includes a **Tag Table Sidebar** that:
+The plugin includes two sidebar views:
 
+### Tag Table Sidebar
 * Shows related pages for the currently active note
 * Updates automatically when switching between files
 * Uses your configured tag level settings
 * Accessible via ribbon icon or command palette
 
-### Accessing the Sidebar
+### Vault Map Sidebar
+* Shows overview of all Collections and Topics in your vault
+* Groups content by Areas using your existing tag structure
+* Provides quick navigation to any collection or topic
+* Updates in real-time as you navigate
 
-* Click the **table icon** in the ribbon
-* Use command: **"WikiKit: Show Tag Table Sidebar"**
+### Accessing the Sidebars
+
+* Click the **table icon** in the ribbon for Tag Table
+* Click the **map icon** in the ribbon for Vault Map
+* Use commands: **"WikiKit: Show Tag Table Sidebar"** or **"WikiKit: Show Vault Map Sidebar"**
 * Automatically appears on the right side
 
 ---
@@ -155,7 +302,9 @@ Use via command palette:
 
 * **WikiKit: Insert Infobox** - Adds infobox template
 * **WikiKit: Insert Tag Table** - Adds tagtable template
-* **WikiKit: Show Tag Table Sidebar** - Opens sidebar view
+* **WikiKit: Insert Vault Map** - Adds vaultmap template
+* **WikiKit: Show Tag Table Sidebar** - Opens tag table sidebar view
+* **WikiKit: Show Vault Map Sidebar** - Opens vault map sidebar view
 * **WikiKit: Create Links from Tag Table** - Generates hard-coded links at cursor position for navigation or graph view
 
 ---
@@ -262,6 +411,58 @@ This will display:
 1. Open any note with area tags
 2. Use command: **"WikiKit: Create Links from Tag Table"**
 3. Hard-coded links are inserted at the cursor position, perfect for navigation sections or for Obsidian's graph view
+
+### Vault Map Examples
+
+#### Basic Vault Map
+````markdown
+```vaultmap
+show_metadata: true
+sort_by: created
+group_by: area
+compact_view: false
+```
+````
+
+#### Compact Overview
+````markdown
+```vaultmap
+compact_view: true
+show_metadata: false
+```
+````
+
+#### Sorted by Name
+````markdown
+```vaultmap
+sort_by: name
+group_by: area
+show_metadata: true
+```
+````
+
+#### Home Page Dashboard
+Perfect for your vault's home page or dashboard:
+
+````markdown
+# 🏠 My Knowledge Vault
+
+Welcome to my digital garden! Here's what I'm working on:
+
+## 📊 Vault Overview
+```vaultmap
+compact_view: true
+sort_by: modified
+group_by: area
+```
+
+## 🎯 Quick Navigation
+- [[Collections]] - Browse all my collections
+- [[Topics]] - Explore topics I'm researching
+- [[Recent]] - Recently updated content
+````
+
+This creates a beautiful, interactive dashboard that gives you instant insight into your vault's structure and content.
 
 ## TODO
 

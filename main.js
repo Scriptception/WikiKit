@@ -16,6 +16,19 @@ const TAGTABLE_ICON_SVG = `
 </svg>
 `;
 const WIKIKIT_TAGTABLE_VIEW_TYPE = "wikikit-tagtable-sidebar";
+const WIKIKIT_VAULTMAP_VIEW_TYPE = "wikikit-vaultmap-sidebar";
+const VAULTMAP_ICON_ID = "wikikit-vaultmap";
+const VAULTMAP_ICON_SVG = `
+<svg viewBox="0 0 100 100" width="100" height="100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="15" width="80" height="70" rx="8" fill="none" stroke="currentColor" stroke-width="3"/>
+  <circle cx="30" cy="35" r="6" fill="currentColor"/>
+  <circle cx="70" cy="35" r="6" fill="currentColor"/>
+  <circle cx="50" cy="65" r="6" fill="currentColor"/>
+  <line x1="30" y1="35" x2="70" y2="35" stroke="currentColor" stroke-width="2"/>
+  <line x1="30" y1="35" x2="50" y2="65" stroke="currentColor" stroke-width="2"/>
+  <line x1="70" y1="35" x2="50" y2="65" stroke="currentColor" stroke-width="2"/>
+</svg>
+`;
 const DEFAULT_SETTINGS = {
   // Tag Table Settings
   level1: 'area',
@@ -27,7 +40,18 @@ const DEFAULT_SETTINGS = {
   infobox_margin_left: '2rem',
   infobox_margin_bottom: '1.5rem',
   infobox_strip_title: true,
-  infobox_exclude_keys: 'tags,aliases,file,position,created,updated,Source'
+  infobox_exclude_keys: 'tags,aliases,file,position,created,updated,Source',
+  // Vault Map Settings
+  vaultmap_show_metadata: true,
+  vaultmap_sort_by: 'created',
+  vaultmap_group_by: 'area',
+  vaultmap_compact_view: false,
+  vaultmap_collection_tag: 'zettel/collection',
+  vaultmap_topic_tag: 'zettel/topic',
+  vaultmap_track_properties: 'status,context,lens',
+  vaultmap_status_enabled: true,
+  vaultmap_status_property: 'status',
+  vaultmap_shorten_tracked_tags: true,
 };
 
 // --- Utility: Parse simple key:value block ---
@@ -354,54 +378,502 @@ async function generateLinksFromTagTable(plugin, filePath, overrides = {}) {
   return result.trim();
 }
 
+// --- Helper: Render Vault Map ---
+async function renderVaultMap(plugin, container, overrides = {}) {
+  container.innerHTML = "";
+  
+  // Get all markdown files
+  const pages = plugin.app.vault.getMarkdownFiles();
+  const collections = [];
+  const topics = [];
+  const areas = new Set();
+  const level1Tags = new Set();
+  const level2Tags = new Set();
+  const level3Tags = new Set();
+  
+  // Get settings
+  const collectionTag = (overrides.collection_tag || plugin.settings.vaultmap_collection_tag || 'zettel/collection').toLowerCase();
+  const topicTag = (overrides.topic_tag || plugin.settings.vaultmap_topic_tag || 'zettel/topic').toLowerCase();
+  const trackTags = (overrides.track_tags || plugin.settings.vaultmap_track_tags || plugin.settings.vaultmap_track_properties || 'status,context,lens').split(',').map(p => p.trim().toLowerCase());
+  const statusEnabled = overrides.status_enabled !== undefined ? overrides.status_enabled === "true" : plugin.settings.vaultmap_status_enabled;
+  const statusProperty = (overrides.status_property || plugin.settings.vaultmap_status_property || 'status').toLowerCase();
+  
+  // Get level tag names for display
+  const level1Name = formatTagName(plugin.settings.level1 || 'area');
+  const level2Name = formatTagName(plugin.settings.level2 || 'category');
+  const level3Name = formatTagName(plugin.settings.level3 || 'subcategory');
+  
+  // Process all pages to categorize them
+  for (const page of pages) {
+    const cache = plugin.app.metadataCache.getCache(page.path);
+    if (!cache || !cache.frontmatter) continue;
+    
+    const fm = cache.frontmatter;
+    const pageTags = (fm.tags || []).map(t => t.toLowerCase());
+    const title = fm.title || page.basename;
+    const displayName = title.replace(/^.* - /, '');
+    
+    // Get file stats
+    const stats = plugin.app.vault.getFileByPath(page.path)?.stat;
+    const created = stats?.ctime ? new Date(stats.ctime) : null;
+    const modified = stats?.mtime ? new Date(stats.mtime) : null;
+    
+    // Check for collection and topic tags
+    const isCollection = pageTags.some(tag => tag === collectionTag);
+    const isTopic = pageTags.some(tag => tag === topicTag);
+    
+    // Get area tags and count level tags
+    const areaTags = pageTags.filter(tag => tag.startsWith('area/'));
+    areaTags.forEach(tag => areas.add(tag));
+    
+    // Count level tags from settings
+    const level1 = plugin.settings.level1 || 'area';
+    const level2 = plugin.settings.level2 || 'category';
+    const level3 = plugin.settings.level3 || 'subcategory';
+    
+    pageTags.forEach(tag => {
+      if (tag.startsWith(`${level1}/`)) level1Tags.add(tag);
+      if (tag.startsWith(`${level2}/`)) level2Tags.add(tag);
+      if (tag.startsWith(`${level3}/`)) level3Tags.add(tag);
+    });
+    
+    // Get status
+    let status = 'Active';
+    if (statusEnabled) {
+      const statusTag = pageTags.find(tag => tag.startsWith(`${statusProperty}/`));
+      status = statusTag ? statusTag.split('/')[1] : 'Active';
+    }
+    
+    const pageData = {
+      name: displayName,
+      title: title,
+      path: page.path,
+      basename: page.basename,
+      created: created,
+      modified: modified,
+      status: status,
+      areas: areaTags,
+      tags: pageTags
+    };
+    
+    if (isCollection) {
+      collections.push(pageData);
+    } else if (isTopic) {
+      topics.push(pageData);
+    }
+  }
+  
+  // Count child pages for collections (handle multiple area tags)
+  collections.forEach(collection => { collection.childCount = 0; });
+  for (const page of pages) {
+    const cache = plugin.app.metadataCache.getCache(page.path);
+    if (!cache) continue;
+    const pageAreaTags = (cache.frontmatter?.tags || []).map(t => t.toLowerCase()).filter(tag => tag.startsWith('area/'));
+    // For each area tag on this page, increment the matching collection's count
+    for (const areaTag of pageAreaTags) {
+      for (const collection of collections) {
+        if (collection.areas.includes(areaTag)) {
+          collection.childCount = (collection.childCount || 0) + 1;
+        }
+      }
+    }
+  }
+  
+  // Track tags for topics (same as before, just renamed)
+  for (const topic of topics) {
+    topic.trackedData = {};
+    trackTags.forEach(rawTag => {
+      const prop = rawTag.trim();
+      topic.trackedData[prop] = 0;
+      const topicAreas = topic.areas;
+      if (topicAreas.length === 0) return;
+      for (const page of pages) {
+        const cache = plugin.app.metadataCache.getCache(page.path);
+        if (!cache || !cache.frontmatter) continue;
+        const pageTags = (cache.frontmatter.tags || []).map(t => t.toLowerCase().trim());
+        const pageAreas = pageTags.filter(tag => tag.startsWith('area/'));
+        const hasSameArea = topicAreas.some(topicArea => pageAreas.includes(topicArea));
+        if (hasSameArea) {
+          const hasPropertyTag = pageTags.some(tag => tag === prop || tag.startsWith(`${prop}/`));
+          if (hasPropertyTag) {
+            topic.trackedData[prop]++;
+          }
+        }
+      }
+    });
+  }
+  
+  // Sort collections and topics
+  const sortBy = overrides.sort_by || plugin.settings.vaultmap_sort_by || 'created';
+  const sortFunction = (a, b) => {
+    switch (sortBy) {
+      case 'created':
+        return (b.created || 0) - (a.created || 0);
+      case 'modified':
+        return (b.modified || 0) - (a.modified || 0);
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'status':
+        return a.status.localeCompare(b.status);
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  };
+  
+  collections.sort(sortFunction);
+  topics.sort(sortFunction);
+  
+  // Group by area if requested
+  const groupBy = overrides.group_by || plugin.settings.vaultmap_group_by || 'area';
+  const compactView = overrides.compact_view === "true" || plugin.settings.vaultmap_compact_view;
+  const showMetadata = overrides.show_metadata !== "false" && plugin.settings.vaultmap_show_metadata;
+  
+  if (compactView) {
+    renderCompactVaultMap(plugin, container, collections, topics, areas, showMetadata, pages.length, level1Tags.size, level2Tags.size, level3Tags.size, level1Name, level2Name, level3Name);
+  } else {
+    renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, pages.length, level1Tags.size, level2Tags.size, level3Tags.size, trackTags, level1Name, level2Name, level3Name);
+  }
+  
+  // Add link handling
+  container.querySelectorAll("a[data-href]").forEach(link => {
+    link.addEventListener("click", (evt) => {
+      evt.preventDefault();
+      const targetPath = link.getAttribute("data-href");
+      const targetFile = plugin.app.vault.getAbstractFileByPath(targetPath);
+      if (targetFile) {
+        plugin.app.workspace.openLinkText(
+          plugin.app.metadataCache.fileToLinktext(targetFile, ""),
+          ""
+        );
+      }
+    });
+  });
+}
+
+// --- Helper: Render Compact Vault Map ---
+function renderCompactVaultMap(plugin, container, collections, topics, areas, showMetadata, totalPages, level1Tags, level2Tags, level3Tags, level1Name, level2Name, level3Name) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "vaultmap-wrapper compact";
+  
+  // Header
+  wrapper.innerHTML = `
+    <div class="vaultmap-header">
+      <h3>🗺️ Vault Overview</h3>
+    </div>
+  `;
+  
+  // Group by areas
+  const areaData = {};
+  areas.forEach(area => {
+    areaData[area] = {
+      collections: collections.filter(c => c.areas.includes(area)),
+      topics: topics.filter(t => t.areas.includes(area))
+    };
+  });
+  
+  // Render each area
+  Object.entries(areaData).forEach(([area, data]) => {
+    const areaName = formatTagName(area.split('/')[1]);
+    const totalPages = data.collections.length + data.topics.length;
+    
+    const areaSection = document.createElement("div");
+    areaSection.className = "vaultmap-area-section";
+    areaSection.innerHTML = `
+      <h4>${getAreaIcon(area)} ${areaName} (${totalPages} pages)</h4>
+      <div class="vaultmap-area-content">
+        ${data.collections.length > 0 ? `
+          <div class="vaultmap-group">
+            <span class="vaultmap-group-icon">📚</span>
+            <span class="vaultmap-group-label">Collections:</span>
+            <span class="vaultmap-group-items">
+              ${data.collections.map(c => `<a href="#" data-href="${c.path}">${c.name}</a>`).join(', ')}
+            </span>
+          </div>
+        ` : ''}
+        ${data.topics.length > 0 ? `
+          <div class="vaultmap-group">
+            <span class="vaultmap-group-icon">🧠</span>
+            <span class="vaultmap-group-label">Topics:</span>
+            <span class="vaultmap-group-items">
+              ${data.topics.map(t => `<a href="#" data-href="${t.path}">${t.name}</a>`).join(', ')}
+            </span>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    wrapper.appendChild(areaSection);
+  });
+  
+  // Summary
+  const summary = document.createElement("div");
+  summary.className = "vaultmap-summary";
+  summary.innerHTML = `
+    <div class="vaultmap-stats">
+      <span>📊 Quick Stats: ${totalPages} Total Pages • ${collections.length} Collections • ${topics.length} Topics • ${level1Tags} ${level1Name} Tags • ${level2Tags} ${level2Name} Tags • ${level3Tags} ${level3Name} Tags</span>
+    </div>
+  `;
+  wrapper.appendChild(summary);
+  
+  container.appendChild(wrapper);
+}
+
+// --- Helper: Render Detailed Vault Map ---
+function renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, totalPages, level1Tags, level2Tags, level3Tags, trackTags, level1Name, level2Name, level3Name) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "vaultmap-wrapper detailed";
+  
+  // Header
+  wrapper.innerHTML = `
+    <div class="vaultmap-header">
+      <h3>🗺️ Vault Content Map</h3>
+    </div>
+  `;
+  
+  // Collections Section
+  if (collections.length > 0) {
+    const collectionsSection = document.createElement("div");
+    collectionsSection.className = "vaultmap-section";
+    collectionsSection.innerHTML = `
+      <h4>🗂️ Collections</h4>
+      <div class="vaultmap-table-wrapper">
+        <table class="vaultmap-table">
+          <thead>
+            <tr>
+              <th>Collection Name</th>
+              <th>Area</th>
+              <th>Items</th>
+              ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? '<th>Created</th><th>Status</th>' : '') : (showMetadata ? '<th>Created</th>' : '')}
+            </tr>
+          </thead>
+          <tbody>
+            ${collections.map(collection => {
+              const area = collection.areas.length > 0 ? formatTagName(collection.areas[0].split('/')[1]) : '—';
+              const created = collection.created ? collection.created.toLocaleDateString() : '—';
+              return `
+                <tr>
+                  <td><a href="#" data-href="${collection.path}">${collection.name}</a></td>
+                  <td>${area}</td>
+                  <td>${collection.childCount || 0}</td>
+                  ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? `<td>${created}</td><td>${collection.status}</td>` : '') : (showMetadata ? `<td>${created}</td>` : '')}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    wrapper.appendChild(collectionsSection);
+  }
+  
+  // Topics Section
+  if (topics.length > 0) {
+    const topicsSection = document.createElement("div");
+    topicsSection.className = "vaultmap-section";
+    
+    // Create dynamic column headers based on trackable tags
+    const propertyHeaders = trackTags.map(prop => {
+      let display = prop;
+      if (plugin.settings.vaultmap_shorten_tracked_tags) {
+        display = prop.split('/').slice(-1)[0];
+      }
+      return `<th>${formatTagName(display)}</th>`;
+    }).join('');
+    
+    topicsSection.innerHTML = `
+      <h4>🧠 Topics</h4>
+      <div class="vaultmap-table-wrapper">
+        <table class="vaultmap-table">
+          <thead>
+            <tr>
+              <th>Topic Name</th>
+              <th>Area</th>
+              ${propertyHeaders}
+              ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? '<th>Created</th><th>Status</th>' : '') : (showMetadata ? '<th>Created</th>' : '')}
+            </tr>
+          </thead>
+          <tbody>
+            ${topics.map(topic => {
+              // Show all area tags, comma separated
+              const area = topic.areas.length > 0 ? topic.areas.map(a => formatTagName(a.split('/').slice(-1)[0])).join(', ') : '—';
+              const created = topic.created ? topic.created.toLocaleDateString() : '—';
+              const propertyCells = trackTags.map(prop => 
+                `<td>${topic.trackedData[prop] || 0}</td>`
+              ).join('');
+              return `
+                <tr>
+                  <td><a href="#" data-href="${topic.path}">${topic.name}</a></td>
+                  <td>${area}</td>
+                  ${propertyCells}
+                  ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? `<td>${created}</td><td>${topic.status}</td>` : '') : (showMetadata ? `<td>${created}</td>` : '')}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    wrapper.appendChild(topicsSection);
+  }
+  
+  // Summary Section
+  const summarySection = document.createElement("div");
+  summarySection.className = "vaultmap-section";
+  summarySection.innerHTML = `
+    <h4>📊 Summary</h4>
+    <div class="vaultmap-summary-stats">
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">Total Pages:</span>
+        <span class="vaultmap-stat-value">${totalPages}</span>
+      </div>
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">Collections:</span>
+        <span class="vaultmap-stat-value">${collections.length}</span>
+      </div>
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">Topics:</span>
+        <span class="vaultmap-stat-value">${topics.length}</span>
+      </div>
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">${level1Name} Tags:</span>
+        <span class="vaultmap-stat-value">${level1Tags}</span>
+      </div>
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">${level2Name} Tags:</span>
+        <span class="vaultmap-stat-value">${level2Tags}</span>
+      </div>
+      <div class="vaultmap-stat">
+        <span class="vaultmap-stat-label">${level3Name} Tags:</span>
+        <span class="vaultmap-stat-value">${level3Tags}</span>
+      </div>
+    </div>
+  `;
+  wrapper.appendChild(summarySection);
+  
+  container.appendChild(wrapper);
+
+  // --- Helper: Make Table Sortable ---
+  function makeTableSortable(table) {
+    const ths = table.querySelectorAll('th');
+    ths.forEach((th, colIdx) => {
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', () => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const isAsc = th.classList.contains('sort-asc');
+        ths.forEach(header => header.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+        const getCellValue = (row, idx) => row.children[idx]?.textContent.trim() || '';
+        rows.sort((a, b) => {
+          const valA = getCellValue(a, colIdx);
+          const valB = getCellValue(b, colIdx);
+          // Try to compare as numbers, fallback to string
+          const numA = parseFloat(valA.replace(/[^\d.\-]/g, ''));
+          const numB = parseFloat(valB.replace(/[^\d.\-]/g, ''));
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return (isAsc ? numA - numB : numB - numA);
+          }
+          return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+        rows.forEach(row => tbody.appendChild(row));
+      });
+    });
+  }
+
+  // After wrapper.appendChild(collectionsSection);
+  setTimeout(() => {
+    const tables = wrapper.querySelectorAll('.vaultmap-table');
+    tables.forEach(makeTableSortable);
+  }, 0);
+}
+
+// --- Helper: Get Area Icon ---
+function getAreaIcon(area) {
+  const areaName = area.split('/')[1].toLowerCase();
+  const iconMap = {
+    'gaming': '🎮',
+    'security': '🔒',
+    'technology': '💻',
+    'programming': '⚡',
+    'research': '🔬',
+    'business': '💼',
+    'health': '🏥',
+    'education': '📚',
+    'finance': '💰',
+    'travel': '✈️'
+  };
+  return iconMap[areaName] || '📁';
+}
+
 // --- Main Plugin Class ---
 module.exports = class WikiKitPlugin extends Plugin {
   async onload() {
     console.log("WikiKit Plugin loaded ✅");
     // Register custom icon if supported
     let iconId = "table";
+    let vaultMapIconId = "map";
     if (typeof this.addIcon === "function") {
       this.addIcon(TAGTABLE_ICON_ID, TAGTABLE_ICON_SVG);
+      this.addIcon(VAULTMAP_ICON_ID, VAULTMAP_ICON_SVG);
       iconId = TAGTABLE_ICON_ID;
+      vaultMapIconId = VAULTMAP_ICON_ID;
     }
     // Load settings
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     // Add settings tab
     this.addSettingTab(new WikiKitSettingTab(this.app, this));
-    // Register sidebar view
+    // Register sidebar views
     this.registerView(
       WIKIKIT_TAGTABLE_VIEW_TYPE,
       (leaf) => new WikiKitTagTableView(leaf, this)
     );
-    // Ribbon icon
+    this.registerView(
+      WIKIKIT_VAULTMAP_VIEW_TYPE,
+      (leaf) => new WikiKitVaultMapView(leaf, this)
+    );
+    // Ribbon icons
     this.addRibbonIcon(iconId, "Show Tag Table Sidebar", () => {
       this.activateView();
     });
-    // Command palette entry
+    this.addRibbonIcon(vaultMapIconId, "Show Vault Map Sidebar", () => {
+      this.activateVaultMapView();
+    });
+    // Command palette entries
     this.addCommand({
       id: "show-tag-table-sidebar",
       name: "Show Tag Table Sidebar",
       callback: () => this.activateView()
     });
-    // Update sidebar on file change
+    this.addCommand({
+      id: "show-vault-map-sidebar",
+      name: "Show Vault Map Sidebar",
+      callback: () => this.activateVaultMapView()
+    });
+    // Update sidebars on file change
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
-        const leaf = this.app.workspace.getLeavesOfType(WIKIKIT_TAGTABLE_VIEW_TYPE)[0];
-        if (leaf && leaf.view instanceof WikiKitTagTableView) {
-          leaf.view.updateTagTable();
+        const tagTableLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_TAGTABLE_VIEW_TYPE)[0];
+        if (tagTableLeaf && tagTableLeaf.view instanceof WikiKitTagTableView) {
+          tagTableLeaf.view.updateTagTable();
+        }
+        const vaultMapLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_VAULTMAP_VIEW_TYPE)[0];
+        if (vaultMapLeaf && vaultMapLeaf.view instanceof WikiKitVaultMapView) {
+          vaultMapLeaf.view.updateVaultMap();
         }
       })
     );
-    // Register Infobox code block
+    // Register code block processors
     this.registerMarkdownCodeBlockProcessor("infobox", (source, el, ctx) => {
       renderInfobox(this, source, el, ctx);
     });
-    // Register TagTable code block
     this.registerMarkdownCodeBlockProcessor("tagtable", (source, el, ctx) => {
       const overrides = parseSimpleBlock(source);
       renderTagTable(this, ctx.sourcePath, el, overrides);
     });
-    // Insert Infobox template command
+    this.registerMarkdownCodeBlockProcessor("vaultmap", (source, el, ctx) => {
+      const overrides = parseSimpleBlock(source);
+      renderVaultMap(this, el, overrides);
+    });
+    // Insert template commands
     this.addCommand({
       id: "insert-infobox",
       name: "WikiKit: Insert Infobox",
@@ -417,7 +889,6 @@ module.exports = class WikiKitPlugin extends Plugin {
         editor.replaceSelection(template + "\n");
       }
     });
-    // Insert TagTable template command
     this.addCommand({
       id: "insert-tag-table",
       name: "WikiKit: Insert Tag Table",
@@ -428,6 +899,21 @@ module.exports = class WikiKitPlugin extends Plugin {
           "level2: Category",
           "level3: SubCategory",
           "first_only: false",
+          "```"
+        ].join("\n");
+        editor.replaceSelection(block + "\n");
+      }
+    });
+    this.addCommand({
+      id: "insert-vault-map",
+      name: "WikiKit: Insert Vault Map",
+      editorCallback: (editor) => {
+        const block = [
+          "```vaultmap",
+          "show_metadata: true",
+          "sort_by: created",
+          "group_by: area",
+          "compact_view: false",
           "```"
         ].join("\n");
         editor.replaceSelection(block + "\n");
@@ -475,11 +961,28 @@ module.exports = class WikiKitPlugin extends Plugin {
     }
   }
 
+  async activateVaultMapView() {
+    let leaf = this.app.workspace.getLeavesOfType(WIKIKIT_VAULTMAP_VIEW_TYPE)[0];
+    if (!leaf) {
+      leaf = this.app.workspace.getRightLeaf(false);
+      await leaf.setViewState({
+        type: WIKIKIT_VAULTMAP_VIEW_TYPE,
+        active: true
+      });
+    } else {
+      this.app.workspace.revealLeaf(leaf);
+    }
+  }
+
   onunload() {
-    // Clean up sidebar reference
-    const leaf = this.app.workspace.getLeavesOfType(WIKIKIT_TAGTABLE_VIEW_TYPE)[0];
-    if (leaf && leaf.view instanceof WikiKitTagTableView) {
-      leaf.view.onunload();
+    // Clean up sidebar references
+    const tagTableLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_TAGTABLE_VIEW_TYPE)[0];
+    if (tagTableLeaf && tagTableLeaf.view instanceof WikiKitTagTableView) {
+      tagTableLeaf.view.onunload();
+    }
+    const vaultMapLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_VAULTMAP_VIEW_TYPE)[0];
+    if (vaultMapLeaf && vaultMapLeaf.view instanceof WikiKitVaultMapView) {
+      vaultMapLeaf.view.onunload();
     }
     console.log("WikiKit Plugin unloaded 🛃");
   }
@@ -516,6 +1019,36 @@ class WikiKitTagTableView extends ItemView {
     this.contentEl.innerHTML = "";
     if (this.plugin.sidebarView === this) {
       this.plugin.sidebarView = null;
+    }
+  }
+}
+
+// --- Sidebar View: Vault Map ---
+class WikiKitVaultMapView extends ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.plugin = plugin;
+    plugin.vaultMapView = this;
+  }
+  getViewType() {
+    return WIKIKIT_VAULTMAP_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "WikiKit Vault Map";
+  }
+  getIcon() {
+    return typeof this.plugin.addIcon === "function" ? VAULTMAP_ICON_ID : "map";
+  }
+  async onOpen() {
+    await this.updateVaultMap();
+  }
+  async updateVaultMap() {
+    await renderVaultMap(this.plugin, this.contentEl);
+  }
+  onunload() {
+    this.contentEl.innerHTML = "";
+    if (this.plugin.vaultMapView === this) {
+      this.plugin.vaultMapView = null;
     }
   }
 }
@@ -642,9 +1175,133 @@ class WikiKitSettingTab extends PluginSettingTab {
           await this.plugin.saveData(this.plugin.settings);
         }));
     
+    // Vault Map Settings Section
+    containerEl.createEl('h3', { text: 'Vault Map Settings' });
+    
+    // Collection Tag
+    new Setting(containerEl)
+      .setName('Collection Tag')
+      .setDesc('Tag used to identify collection pages (e.g. zettel/collection)')
+      .addText(text => text
+        .setPlaceholder('zettel/collection')
+        .setValue(this.plugin.settings.vaultmap_collection_tag)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_collection_tag = value.trim() || 'zettel/collection';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Topic Tag
+    new Setting(containerEl)
+      .setName('Topic Tag')
+      .setDesc('Tag used to identify topic pages (e.g. zettel/topic)')
+      .addText(text => text
+        .setPlaceholder('zettel/topic')
+        .setValue(this.plugin.settings.vaultmap_topic_tag)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_topic_tag = value.trim() || 'zettel/topic';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Track Tags
+    new Setting(containerEl)
+      .setName('Track Tags')
+      .setDesc('Comma-separated list of tag prefixes to count in topics table (e.g. status,context,lens)')
+      .addText(text => text
+        .setPlaceholder('status,context,lens')
+        .setValue(this.plugin.settings.vaultmap_track_properties)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_track_properties = value.trim() || 'status,context,lens';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Status Enabled
+    new Setting(containerEl)
+      .setName('Enable Status Tracking')
+      .setDesc('Show status column in vault map tables')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.vaultmap_status_enabled)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_status_enabled = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Status Property
+    new Setting(containerEl)
+      .setName('Status Property')
+      .setDesc('If you tag like status/draft or status/active, then specify "status" here')
+      .addText(text => text
+        .setPlaceholder('status')
+        .setValue(this.plugin.settings.vaultmap_status_property)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_status_property = value.trim() || 'status';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Show Metadata
+    new Setting(containerEl)
+      .setName('Show Metadata')
+      .setDesc('Display created date, status, and other metadata in vault map tables')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.vaultmap_show_metadata)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_show_metadata = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Sort By
+    new Setting(containerEl)
+      .setName('Default Sort Order')
+      .setDesc('How to sort collections and topics by default')
+      .addDropdown(dropdown => dropdown
+        .addOption('created', 'Created Date (Newest First)')
+        .addOption('modified', 'Modified Date (Newest First)')
+        .addOption('name', 'Name (Alphabetical)')
+        .addOption('status', 'Status')
+        .setValue(this.plugin.settings.vaultmap_sort_by)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_sort_by = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Group By
+    new Setting(containerEl)
+      .setName('Default Grouping')
+      .setDesc('How to group content in the vault map')
+      .addDropdown(dropdown => dropdown
+        .addOption('area', 'By Area')
+        .addOption('status', 'By Status')
+        .addOption('none', 'No Grouping')
+        .setValue(this.plugin.settings.vaultmap_group_by)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_group_by = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Compact View
+    new Setting(containerEl)
+      .setName('Default Compact View')
+      .setDesc('Use compact overview layout instead of detailed tables by default')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.vaultmap_compact_view)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_compact_view = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Shorten Tracked Tag Names
+    new Setting(containerEl)
+      .setName('Shorten Tracked Tag Names')
+      .setDesc('If enabled, only the last part of each tracked tag (e.g. "Atom" from "zettel/atom") will be shown as the column name in the topics table.')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.vaultmap_shorten_tracked_tags)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_shorten_tracked_tags = value;
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
     // Helpful note about refreshing
     containerEl.createEl('div', { 
-      text: '💡 Tip: Infobox settings changes require refreshing the page view to take effect. Switch to another note and back.',
+      text: '💡 Tip: Vault Map settings changes require refreshing the page view to take effect. Switch to another note and back.',
       cls: 'setting-item-description',
       attr: { style: 'margin-top: 1rem; padding: 0.5rem; background: var(--background-secondary); border-radius: 4px; font-style: italic;' }
     });
