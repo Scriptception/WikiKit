@@ -120,7 +120,7 @@
 
 .infobox-float td:not(:first-child) {
   color: var(--text-normal);
-  background-color: var(--background-modifier-box-shadow);
+  background-color: var(--background-modifier-box-shadow) !important;
 }
 
 
