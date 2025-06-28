@@ -633,32 +633,40 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   if (collections.length > 0) {
     const collectionsSection = document.createElement("div");
     collectionsSection.className = "vaultmap-section";
+    // Build header row with semantic classes
+    let collectionsHeader = `<tr><th>Collection Name</th><th>Area</th><th class='is-number'>Items</th>`;
+    if (plugin.settings.vaultmap_status_enabled) {
+      if (showMetadata) {
+        collectionsHeader += `<th class='is-meta'>Created</th><th class='is-meta'>Status</th>`;
+      }
+    } else if (showMetadata) {
+      collectionsHeader += `<th class='is-meta'>Created</th>`;
+    }
+    collectionsHeader += `</tr>`;
+    // Build body rows with semantic classes
+    const collectionsBody = collections.map(collection => {
+      const area = collection.areas.length > 0 ? collection.areas.map(a => formatTagName(a.split('/')[1])).join('<br><span>') : '—';
+      const created = collection.created ? collection.created.toLocaleDateString() : '—';
+      let row = `<tr>`;
+      row += `<td><a href="#" data-href="${collection.path}">${collection.name}</a></td>`;
+      row += `<td>${collection.areas.length > 0 ? '<span>' + area + '</span>' : area}</td>`;
+      row += `<td class='is-number'>${collection.childCount || 0}</td>`;
+      if (plugin.settings.vaultmap_status_enabled) {
+        if (showMetadata) {
+          row += `<td class='is-meta'>${created}</td><td class='is-meta'>${collection.status}</td>`;
+        }
+      } else if (showMetadata) {
+        row += `<td class='is-meta'>${created}</td>`;
+      }
+      row += `</tr>`;
+      return row;
+    }).join('');
     collectionsSection.innerHTML = `
       <h4>🗂️ Collections</h4>
       <div class="vaultmap-table-wrapper">
         <table class="vaultmap-table">
-          <thead>
-            <tr>
-              <th>Collection Name</th>
-              <th>Area</th>
-              <th>Items</th>
-              ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? '<th>Created</th><th>Status</th>' : '') : (showMetadata ? '<th>Created</th>' : '')}
-            </tr>
-          </thead>
-          <tbody>
-            ${collections.map(collection => {
-              const area = collection.areas.length > 0 ? formatTagName(collection.areas[0].split('/')[1]) : '—';
-              const created = collection.created ? collection.created.toLocaleDateString() : '—';
-              return `
-                <tr>
-                  <td><a href="#" data-href="${collection.path}">${collection.name}</a></td>
-                  <td>${area}</td>
-                  <td>${collection.childCount || 0}</td>
-                  ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? `<td>${created}</td><td>${collection.status}</td>` : '') : (showMetadata ? `<td>${created}</td>` : '')}
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
+          <thead>${collectionsHeader}</thead>
+          <tbody>${collectionsBody}</tbody>
         </table>
       </div>
     `;
@@ -669,46 +677,47 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   if (topics.length > 0) {
     const topicsSection = document.createElement("div");
     topicsSection.className = "vaultmap-section";
-    
-    // Create dynamic column headers based on trackable tags
-    const propertyHeaders = trackTags.map(prop => {
+    // Build header row with semantic classes
+    let topicsHeader = `<tr><th>Topic Name</th><th>Area</th>`;
+    topicsHeader += trackTags.map(prop => {
       let display = prop;
       if (plugin.settings.vaultmap_shorten_tracked_tags) {
         display = prop.split('/').slice(-1)[0];
       }
-      return `<th>${formatTagName(display)}</th>`;
+      return `<th class='is-number'>${formatTagName(display)}</th>`;
     }).join('');
-    
+    if (plugin.settings.vaultmap_status_enabled) {
+      if (showMetadata) {
+        topicsHeader += `<th class='is-meta'>Created</th><th class='is-meta'>Status</th>`;
+      }
+    } else if (showMetadata) {
+      topicsHeader += `<th class='is-meta'>Created</th>`;
+    }
+    topicsHeader += `</tr>`;
+    // Build body rows with semantic classes
+    const topicsBody = topics.map(topic => {
+      const area = topic.areas.length > 0 ? topic.areas.map(a => formatTagName(a.split('/').slice(-1)[0])).join('<br><span>') : '—';
+      const created = topic.created ? topic.created.toLocaleDateString() : '—';
+      let row = `<tr>`;
+      row += `<td><a href="#" data-href="${topic.path}">${topic.name}</a></td>`;
+      row += `<td>${topic.areas.length > 0 ? '<span>' + area + '</span>' : area}</td>`;
+      row += trackTags.map(prop => `<td class='is-number'>${topic.trackedData[prop] || 0}</td>`).join('');
+      if (plugin.settings.vaultmap_status_enabled) {
+        if (showMetadata) {
+          row += `<td class='is-meta'>${created}</td><td class='is-meta'>${topic.status}</td>`;
+        }
+      } else if (showMetadata) {
+        row += `<td class='is-meta'>${created}</td>`;
+      }
+      row += `</tr>`;
+      return row;
+    }).join('');
     topicsSection.innerHTML = `
       <h4>🧠 Topics</h4>
       <div class="vaultmap-table-wrapper">
         <table class="vaultmap-table">
-          <thead>
-            <tr>
-              <th>Topic Name</th>
-              <th>Area</th>
-              ${propertyHeaders}
-              ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? '<th>Created</th><th>Status</th>' : '') : (showMetadata ? '<th>Created</th>' : '')}
-            </tr>
-          </thead>
-          <tbody>
-            ${topics.map(topic => {
-              // Show all area tags, comma separated
-              const area = topic.areas.length > 0 ? topic.areas.map(a => formatTagName(a.split('/').slice(-1)[0])).join(', ') : '—';
-              const created = topic.created ? topic.created.toLocaleDateString() : '—';
-              const propertyCells = trackTags.map(prop => 
-                `<td>${topic.trackedData[prop] || 0}</td>`
-              ).join('');
-              return `
-                <tr>
-                  <td><a href="#" data-href="${topic.path}">${topic.name}</a></td>
-                  <td>${area}</td>
-                  ${propertyCells}
-                  ${plugin.settings.vaultmap_status_enabled ? (showMetadata ? `<td>${created}</td><td>${topic.status}</td>` : '') : (showMetadata ? `<td>${created}</td>` : '')}
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
+          <thead>${topicsHeader}</thead>
+          <tbody>${topicsBody}</tbody>
         </table>
       </div>
     `;

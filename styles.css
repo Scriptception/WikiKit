@@ -526,3 +526,28 @@
   border-right: 1.5px solid var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
+/* Vertically center all cell text */
+.vaultmap-table td, .vaultmap-table th {
+  vertical-align: middle;
+}
+
+/* Right-align number columns */
+.vaultmap-table td.is-number, .vaultmap-table th.is-number {
+  text-align: right;
+}
+
+/* Metadata/status columns: italic only, keep original color */
+.vaultmap-table td.is-meta, .vaultmap-table th.is-meta {
+  font-style: italic;
+}
+
+/* Metadata td cells should be text-accent colored */
+.vaultmap-table td.is-meta {
+  color: var(--text-muted);
+}
+
+/* Area column styling - newline separated with styled bullet points */
+.vaultmap-table td:nth-child(2) {
+  line-height: 1.3;
+}
+
