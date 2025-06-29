@@ -250,6 +250,7 @@
   text-align: center;
   margin-bottom: 1em;
   padding-bottom: 0.5em;
+  position: relative;
 }
 
 .vaultmap-header h3 {
@@ -271,6 +272,56 @@
 .vaultmap-table-wrapper {
   overflow-x: auto;
   margin-bottom: 1rem;
+}
+
+/* Scrollable table styles */
+.vaultmap-table-wrapper.vaultmap-scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.vaultmap-table-wrapper.vaultmap-scrollable .vaultmap-table {
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.vaultmap-table-wrapper.vaultmap-scrollable thead {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.vaultmap-table-wrapper.vaultmap-scrollable thead tr {
+  background-color: var(--background-secondary);
+}
+
+.vaultmap-table-wrapper.vaultmap-scrollable thead th {
+  background-color: var(--background-secondary) !important;
+  position: sticky;
+  top: 0;
+  z-index: 101;
+  border-bottom: 2px solid var(--background-modifier-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Show more indicator row */
+.vaultmap-show-more-row {
+  background-color: var(--background-modifier-hover);
+}
+
+.vaultmap-show-more-cell {
+  text-align: center !important;
+  font-style: italic;
+  color: var(--text-muted);
+  padding: 0.75em 1em !important;
+  font-size: 0.85rem;
 }
 
 .vaultmap-table {
@@ -328,11 +379,36 @@
   transition: background-color 0.2s ease;
 }
 
+.vaultmap-summary-toggle {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vaultmap-summary-toggle:hover {
+  opacity: 0.8;
+}
+
+.vaultmap-toggle-icon {
+  font-size: 1.1em;
+}
+
+.vaultmap-toggle-text {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .vaultmap-summary-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  transition: opacity 0.3s ease;
 }
 
 .vaultmap-stat {
@@ -439,6 +515,10 @@
     font-size: 0.8rem;
   }
   
+  .vaultmap-table-wrapper.vaultmap-scrollable {
+    max-height: 300px;
+  }
+  
   .vaultmap-table th,
   .vaultmap-table td {
     padding: 0.5em 0.75em;
@@ -467,6 +547,10 @@
   .vaultmap-wrapper {
     margin: 1rem 0;
     padding: 0.75em;
+  }
+  
+  .vaultmap-table-wrapper.vaultmap-scrollable {
+    max-height: 250px;
   }
   
   .vaultmap-summary-stats {

@@ -145,6 +145,8 @@ compact_view: false
 | `shorten_tracked_tag_names` | Show only the last part of each tracked tag as the column name (default: from settings) |
 | `status_enabled`    | Enable/disable status tracking (default: from settings) |
 | `status_property`   | Override status property (default: from settings) |
+| `max_collection_rows` | Maximum collection rows before table becomes scrollable (default: from settings) |
+| `max_topic_rows`    | Maximum topic rows before table becomes scrollable (default: from settings) |
 
 ### View Modes
 
@@ -153,10 +155,13 @@ Shows comprehensive tables with:
 * **Collections table**: Name, Area, Items count (child pages), Created date, Status
 * **Topics table**: Name, Area, [Trackable Tags], Created date, Status
 * **Summary statistics**: Total pages, collections, topics, and level tag counts
+* **Scrollable tables**: When tables exceed the configured row limits, they become scrollable with sticky headers
 
 > **💡 Items Field**: Shows the number of pages that link to each collection (child pages). This helps you see how many items are actually contained within each collection.
 
 > **💡 Trackable Tags**: Counts pages within the same area that have specific tags. For example, if you track `zettel/molecule` and `zettel/atom`, it will count how many pages in the same area have those tags, giving you insight into the topic's content structure. If 'Shorten Tracked Tag Names' is enabled, only the last part of each tag will be shown as the column name.
+
+> **💡 Scrollable Tables**: Large datasets are automatically made scrollable to keep your vault map compact. Configure the row limits in settings or override them in individual vaultmap blocks.
 
 #### Compact View
 Shows area-based overview with:
@@ -231,6 +236,20 @@ status_property: status
 
 This would show columns for Molecules, Atoms, and Sources in the topics table, perfect for tracking different types of knowledge components.
 
+#### Scrollable Tables Configuration
+Control table size and scrolling behavior:
+
+````markdown
+```vaultmap
+max_collection_rows: 5
+max_topic_rows: 8
+show_metadata: true
+sort_by: name
+```
+````
+
+This creates compact tables that show only 5 collections and 8 topics before becoming scrollable, perfect for dashboards with limited space.
+
 ---
 
 ## 🔧 Settings
@@ -264,6 +283,10 @@ Access via **Settings → Community Plugins → WikiKit**:
 * **Default Sort Order**: How to sort collections and topics (default: `created`)
 * **Default Grouping**: How to group content (default: `area`)
 * **Default Compact View**: Use compact overview instead of detailed tables (default: `false`)
+* **Max Collection Rows**: Maximum number of collection rows to display before making the table scrollable (default: `10`)
+* **Max Topic Rows**: Maximum number of topic rows to display before making the table scrollable (default: `15`)
+
+> **💡 Scrollable Tables**: When tables exceed the configured row limits, they become scrollable with a sticky header. A "+ X more" indicator shows how many additional items are available. This keeps your vault map compact while still providing access to all content.
 
 These settings apply globally unless overridden in individual infobox, tagtable, or vaultmap blocks.
 

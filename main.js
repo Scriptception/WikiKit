@@ -53,6 +53,9 @@ const DEFAULT_SETTINGS = {
   vaultmap_status_property: 'status',
   vaultmap_shorten_tracked_tags: true,
   vaultmap_exclude_folders: '',
+  vaultmap_max_collection_rows: 10,
+  vaultmap_max_topic_rows: 15,
+  vaultmap_summary_visible: true,
 };
 
 // --- Utility: Parse simple key:value block ---
@@ -556,10 +559,14 @@ async function renderVaultMap(plugin, container, overrides = {}) {
   const compactView = overrides.compact_view === "true" || plugin.settings.vaultmap_compact_view;
   const showMetadata = overrides.show_metadata !== "false" && plugin.settings.vaultmap_show_metadata;
   
+  // Get max row settings (can be overridden in code block)
+  const maxCollectionRows = overrides.max_collection_rows ? parseInt(overrides.max_collection_rows) : (plugin.settings.vaultmap_max_collection_rows || 10);
+  const maxTopicRows = overrides.max_topic_rows ? parseInt(overrides.max_topic_rows) : (plugin.settings.vaultmap_max_topic_rows || 15);
+  
   if (compactView) {
     renderCompactVaultMap(plugin, container, collections, topics, areas, showMetadata, filteredPages.length, level1Tags.size, level2Tags.size, level3Tags.size, level1Name, level2Name, level3Name);
   } else {
-    renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, filteredPages.length, level1Tags.size, level2Tags.size, level3Tags.size, trackTags, level1Name, level2Name, level3Name);
+    renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, filteredPages.length, level1Tags.size, level2Tags.size, level3Tags.size, trackTags, level1Name, level2Name, level3Name, maxCollectionRows, maxTopicRows);
   }
   
   // Add link handling
@@ -646,7 +653,7 @@ function renderCompactVaultMap(plugin, container, collections, topics, areas, sh
 }
 
 // --- Helper: Render Detailed Vault Map ---
-function renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, totalPages, level1Tags, level2Tags, level3Tags, trackTags, level1Name, level2Name, level3Name) {
+function renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, totalPages, level1Tags, level2Tags, level3Tags, trackTags, level1Name, level2Name, level3Name, maxCollectionRows, maxTopicRows) {
   const wrapper = document.createElement("div");
   wrapper.className = "vaultmap-wrapper detailed";
   
@@ -661,6 +668,13 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   if (collections.length > 0) {
     const collectionsSection = document.createElement("div");
     collectionsSection.className = "vaultmap-section";
+    
+    // Get max rows setting
+    const hasMoreCollections = collections.length > maxCollectionRows;
+    // Render all rows, not just the first N
+    // const displayCollections = hasMoreCollections ? collections.slice(0, maxCollectionRows) : collections;
+    const displayCollections = collections;
+    
     // Build header row with semantic classes
     let collectionsHeader = `<tr><th>Collection Name</th><th>Area</th><th class='is-number'>Items</th>`;
     if (plugin.settings.vaultmap_status_enabled) {
@@ -671,8 +685,9 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
       collectionsHeader += `<th class='is-meta'>Created</th>`;
     }
     collectionsHeader += `</tr>`;
+    
     // Build body rows with semantic classes
-    const collectionsBody = collections.map(collection => {
+    const collectionsBody = displayCollections.map(collection => {
       const area = collection.areas.length > 0 ? collection.areas.map(a => formatTagName(a.split('/')[1])).join('<br><span>') : '—';
       const created = collection.created ? collection.created.toLocaleDateString() : '—';
       let row = `<tr>`;
@@ -689,9 +704,10 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
       row += `</tr>`;
       return row;
     }).join('');
+    
     collectionsSection.innerHTML = `
-      <h4>🗂️ Collections</h4>
-      <div class="vaultmap-table-wrapper">
+      <h4>🗂️ Collections (${collections.length})</h4>
+      <div class="vaultmap-table-wrapper ${hasMoreCollections ? 'vaultmap-scrollable' : ''}">
         <table class="vaultmap-table">
           <thead>${collectionsHeader}</thead>
           <tbody>${collectionsBody}</tbody>
@@ -705,6 +721,13 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   if (topics.length > 0) {
     const topicsSection = document.createElement("div");
     topicsSection.className = "vaultmap-section";
+    
+    // Get max rows setting
+    const hasMoreTopics = topics.length > maxTopicRows;
+    // Render all rows, not just the first N
+    // const displayTopics = hasMoreTopics ? topics.slice(0, maxTopicRows) : topics;
+    const displayTopics = topics;
+    
     // Build header row with semantic classes
     let topicsHeader = `<tr><th>Topic Name</th><th>Area</th>`;
     topicsHeader += trackTags.map(prop => {
@@ -722,8 +745,9 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
       topicsHeader += `<th class='is-meta'>Created</th>`;
     }
     topicsHeader += `</tr>`;
+    
     // Build body rows with semantic classes
-    const topicsBody = topics.map(topic => {
+    const topicsBody = displayTopics.map(topic => {
       const area = topic.areas.length > 0 ? topic.areas.map(a => formatTagName(a.split('/').slice(-1)[0])).join('<br><span>') : '—';
       const created = topic.created ? topic.created.toLocaleDateString() : '—';
       let row = `<tr>`;
@@ -740,9 +764,10 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
       row += `</tr>`;
       return row;
     }).join('');
+    
     topicsSection.innerHTML = `
-      <h4>🧠 Topics</h4>
-      <div class="vaultmap-table-wrapper">
+      <h4>🧠 Topics (${topics.length})</h4>
+      <div class="vaultmap-table-wrapper ${hasMoreTopics ? 'vaultmap-scrollable' : ''}">
         <table class="vaultmap-table">
           <thead>${topicsHeader}</thead>
           <tbody>${topicsBody}</tbody>
@@ -755,9 +780,19 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   // Summary Section
   const summarySection = document.createElement("div");
   summarySection.className = "vaultmap-section";
+  
+  // Get the stored summary visibility state
+  const summaryVisible = plugin.settings.vaultmap_summary_visible !== false; // Default to true
+  const toggleIcon = summaryVisible ? '📊' : '📈';
+  const toggleText = summaryVisible ? '(click to hide)' : '(click to show)';
+  const summaryDisplay = summaryVisible ? 'grid' : 'none';
+  
   summarySection.innerHTML = `
-    <h4>📊 Summary</h4>
-    <div class="vaultmap-summary-stats">
+    <h4 class="vaultmap-summary-toggle" style="cursor: pointer; user-select: none;">
+      <span class="vaultmap-toggle-icon">${toggleIcon}</span> Summary 
+      <span class="vaultmap-toggle-text">${toggleText}</span>
+    </h4>
+    <div class="vaultmap-summary-stats" style="display: ${summaryDisplay};">
       <div class="vaultmap-stat">
         <span class="vaultmap-stat-label">Total Pages:</span>
         <span class="vaultmap-stat-value">${totalPages}</span>
@@ -819,6 +854,54 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   setTimeout(() => {
     const tables = wrapper.querySelectorAll('.vaultmap-table');
     tables.forEach(makeTableSortable);
+
+    // Add summary toggle functionality
+    const summaryToggle = wrapper.querySelector('.vaultmap-summary-toggle');
+    const summaryStats = wrapper.querySelector('.vaultmap-summary-stats');
+    const toggleIcon = wrapper.querySelector('.vaultmap-toggle-icon');
+    const toggleText = wrapper.querySelector('.vaultmap-toggle-text');
+    
+    if (summaryToggle && summaryStats) {
+      summaryToggle.addEventListener('click', async () => {
+        const isVisible = summaryStats.style.display !== 'none';
+        if (isVisible) {
+          summaryStats.style.display = 'none';
+          toggleIcon.textContent = '📈';
+          toggleText.textContent = '(click to show)';
+          plugin.settings.vaultmap_summary_visible = false;
+        } else {
+          summaryStats.style.display = 'grid';
+          toggleIcon.textContent = '📊';
+          toggleText.textContent = '(click to hide)';
+          plugin.settings.vaultmap_summary_visible = true;
+        }
+        // Save the setting
+        await plugin.saveData(plugin.settings);
+      });
+    }
+
+    // Dynamically set max-height for scrollable tables to fit exactly the number of rows specified
+    const wrappers = wrapper.querySelectorAll('.vaultmap-table-wrapper.vaultmap-scrollable');
+    wrappers.forEach((wrap, index) => {
+      const table = wrap.querySelector('table');
+      if (!table) return;
+      const thead = table.querySelector('thead');
+      const tbody = table.querySelector('tbody');
+      if (!tbody) return;
+      // Use the first row to measure row height
+      const firstRow = tbody.querySelector('tr');
+      const rowCount = Array.from(wrap.parentElement.querySelectorAll('h4'))[0]?.textContent.includes('Collection') ? maxCollectionRows : maxTopicRows;
+      if (firstRow) {
+        const rowHeight = firstRow.getBoundingClientRect().height;
+        let headerHeight = 0;
+        if (thead) {
+          const headRow = thead.querySelector('tr');
+          if (headRow) headerHeight = headRow.getBoundingClientRect().height;
+        }
+        // Set max-height to fit exactly the number of rows + header
+        wrap.style.maxHeight = ((rowHeight * rowCount) + headerHeight) + 'px';
+      }
+    });
   }, 0);
 }
 
@@ -894,16 +977,26 @@ module.exports = class WikiKitPlugin extends Plugin {
       callback: () => this.activateVaultMapView()
     });
     
+    this.addCommand({
+      id: "refresh-vault-map",
+      name: "Refresh Vault Map",
+      callback: () => {
+        const vaultMapLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_VAULTMAP_VIEW_TYPE)[0];
+        if (vaultMapLeaf && vaultMapLeaf.view instanceof WikiKitVaultMapView) {
+          vaultMapLeaf.view.updateVaultMap();
+          new Notice("Vault map refreshed!");
+        } else {
+          new Notice("Vault map sidebar not open. Open it first.");
+        }
+      }
+    });
+    
     // Update sidebars on file change
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
         const tagTableLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_TAGTABLE_VIEW_TYPE)[0];
         if (tagTableLeaf && tagTableLeaf.view instanceof WikiKitTagTableView) {
           tagTableLeaf.view.updateTagTable();
-        }
-        const vaultMapLeaf = this.app.workspace.getLeavesOfType(WIKIKIT_VAULTMAP_VIEW_TYPE)[0];
-        if (vaultMapLeaf && vaultMapLeaf.view instanceof WikiKitVaultMapView) {
-          vaultMapLeaf.view.updateVaultMap();
         }
       })
     );
@@ -1378,6 +1471,40 @@ class WikiKitSettingTab extends PluginSettingTab {
           this.plugin.settings.vaultmap_shorten_tracked_tags = value;
           await this.plugin.saveData(this.plugin.settings);
         }));
+    
+    // Max Collection Rows
+    new Setting(containerEl)
+      .setName('Max Collection Rows')
+      .setDesc('Maximum number of collection rows to display before making the table scrollable (default: 10)')
+      .addText(text => text
+        .setPlaceholder('10')
+        .setValue(String(this.plugin.settings.vaultmap_max_collection_rows || 10))
+        .onChange(async (value) => {
+          const num = parseInt(value);
+          if (!isNaN(num) && num > 0) {
+            this.plugin.settings.vaultmap_max_collection_rows = num;
+            await this.plugin.saveData(this.plugin.settings);
+          }
+        })
+        .inputEl.setAttr('type', 'number')
+      );
+    
+    // Max Topic Rows
+    new Setting(containerEl)
+      .setName('Max Topic Rows')
+      .setDesc('Maximum number of topic rows to display before making the table scrollable (default: 15)')
+      .addText(text => text
+        .setPlaceholder('15')
+        .setValue(String(this.plugin.settings.vaultmap_max_topic_rows || 15))
+        .onChange(async (value) => {
+          const num = parseInt(value);
+          if (!isNaN(num) && num > 0) {
+            this.plugin.settings.vaultmap_max_topic_rows = num;
+            await this.plugin.saveData(this.plugin.settings);
+          }
+        })
+        .inputEl.setAttr('type', 'number')
+      );
     
     // Helpful note about refreshing
     containerEl.createEl('div', { 
