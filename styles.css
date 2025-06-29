@@ -600,3 +600,26 @@
   font-style: italic;
 }
 
+.vaultmap-search-container {
+  text-align: center;
+  margin-bottom: 0.5em;
+}
+
+.vaultmap-search {
+  padding: 0.5em 1em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: 1em;
+  width: 100%;
+  max-width: 350px;
+  box-sizing: border-box;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  margin: 0.5em auto 1em auto;
+  transition: border-color 0.2s;
+}
+.vaultmap-search:focus {
+  outline: none;
+  border-color: var(--text-accent);
+}
+

@@ -665,6 +665,13 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
       <h3>🗺️ Vault Content Map</h3>
     </div>
   `;
+
+  // --- Add Search Box ---
+  const searchDiv = document.createElement('div');
+  searchDiv.className = 'vaultmap-search-container';
+  searchDiv.innerHTML = `<input type="text" class="vaultmap-search" placeholder="Search name or area..." style="width:100%;max-width:350px;margin:0.5em auto 1em auto;display:block;">`;
+  wrapper.appendChild(searchDiv);
+  const searchInput = searchDiv.querySelector('.vaultmap-search');
   
   // Collections Section
   if (collections.length > 0) {
@@ -852,10 +859,33 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
     });
   }
 
+  // --- Helper: Filter Table Rows ---
+  function filterTableRows(table, searchValue) {
+    const rows = table.querySelectorAll('tbody tr');
+    const search = searchValue.trim().toLowerCase();
+    rows.forEach(row => {
+      // Name is always first column, Area is always second
+      const nameCell = row.children[0]?.textContent.toLowerCase() || '';
+      const areaCell = row.children[1]?.textContent.toLowerCase() || '';
+      if (!search || nameCell.includes(search) || areaCell.includes(search)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
   // Make tables sortable after rendering
   setTimeout(() => {
     const tables = wrapper.querySelectorAll('.vaultmap-table');
     tables.forEach(makeTableSortable);
+
+    // Add search filtering
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        tables.forEach(table => filterTableRows(table, searchInput.value));
+      });
+    }
 
     // Add summary toggle functionality
     const summaryToggle = wrapper.querySelector('.vaultmap-summary-toggle');
