@@ -4,7 +4,9 @@
   "version": "0.2.0",
   "author": "ScriptCeption",
   "authorUrl": "https://github.com/ScriptCeption",
-  "description": "Wiki-Style modules for obsidian, such as Infobox, Related Pages, Tag Tables, and Tag Links...",
+  "description": "Wiki-Style modules for Obsidian, including Infoboxes, Tag Tables, and Vault Maps with professional styling and theme compatibility.",
   "main": "main.js",
-  "minAppVersion": "1.0.0"
+  "styles": ["styles.css"],
+  "minAppVersion": "1.0.0",
+  "isDesktopOnly": false
 }

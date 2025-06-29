@@ -10,9 +10,9 @@ const TAGTABLE_ICON_SVG = `
   <rect x="15" y="20" width="70" height="12" rx="3" fill="currentColor"/>
   <rect x="15" y="44" width="70" height="12" rx="3" fill="currentColor"/>
   <rect x="15" y="68" width="70" height="12" rx="3" fill="currentColor"/>
-  <circle cx="30" cy="26" r="4" fill="#FFD600"/>
-  <circle cx="30" cy="50" r="4" fill="#FFD600"/>
-  <circle cx="30" cy="74" r="4" fill="#FFD600"/>
+  <circle cx="30" cy="26" r="4" fill="currentColor"/>
+  <circle cx="30" cy="50" r="4" fill="currentColor"/>
+  <circle cx="30" cy="74" r="4" fill="currentColor"/>
 </svg>
 `;
 const WIKIKIT_TAGTABLE_VIEW_TYPE = "wikikit-tagtable-sidebar";
@@ -73,6 +73,15 @@ function formatTagName(tagName) {
     .replace(/\b\w/g, c => c.toUpperCase());  // Capitalize all words
 }
 
+// --- Helper: Set CSS custom properties for dynamic styling ---
+function setWikiKitCSSProperties(plugin) {
+  const root = document.documentElement;
+  root.style.setProperty('--wikikit-infobox-width', plugin.settings.infobox_width || '320px');
+  root.style.setProperty('--wikikit-infobox-margin-left', plugin.settings.infobox_margin_left || '2rem');
+  root.style.setProperty('--wikikit-infobox-margin-bottom', plugin.settings.infobox_margin_bottom || '1.5rem');
+  root.style.setProperty('--wikikit-table-spacing', plugin.settings.table_spacing || '2rem');
+}
+
 // --- Helper: Render Tag Table (shared by codeblock & sidebar) ---
 async function renderTagTable(plugin, filePath, container, overrides = {}) {
   container.innerHTML = "";
@@ -90,7 +99,7 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
   
   if (areaTags.length === 0) {
     const level1Label = (overrides.level1 || plugin.settings.level1 || 'area').replace(/^\w/, c => c.toUpperCase());
-    container.innerHTML = `<p><em>No ${level1Label} tag found on this page.</em></p>`;
+    container.innerHTML = `<p class="wikikit-sidebar-message"><em>No ${level1Label} tag found on this page.</em></p>`;
     return;
   }
 
@@ -133,11 +142,6 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     const title = formatTagName(targetAreaTag.split("/").slice(-1)[0]);
     const tableWrapper = document.createElement("div");
     tableWrapper.className = "tagtable-wrapper sidebar";
-    
-    // Add spacing between multiple tables
-    if (i > 0) {
-      tableWrapper.style.marginTop = plugin.settings.table_spacing || '2rem';
-    }
     
     tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
     const table = document.createElement("table");
@@ -213,12 +217,14 @@ function renderInfobox(plugin, source, el, ctx) {
   const file = ctx.sourcePath;
   const cache = plugin.app.metadataCache.getCache(file) || {};
   const frontmatter = cache.frontmatter || {};
+  
   // Exclude keys - use settings or overrides
   const defaultExcludeKeys = (plugin.settings.infobox_exclude_keys || 'tags,aliases,file,position,created,updated,Source').split(/[\,\n]/).map(k => k.trim().toLowerCase());
   const excludeKeys = new Set(
     defaultExcludeKeys
       .concat((overrides.exclude || "").split(/[\,\n]/).map(k => k.trim().toLowerCase()))
   );
+  
   // Title logic
   const originalFileName = file.replace(/^[^/]*[\\/]/, '').replace(/\.md$/, '');
   let displayName = overrides.title || frontmatter.title || originalFileName;
@@ -226,6 +232,7 @@ function renderInfobox(plugin, source, el, ctx) {
   if (shouldStripTitle) {
     displayName = displayName.replace(/^.* - /, '');
   }
+  
   // Image logic
   let src = null;
   const imageName = overrides.image;
@@ -244,6 +251,7 @@ function renderInfobox(plugin, source, el, ctx) {
       }
     }
   }
+  
   // Table rows
   const rows = overrides.hidetable === "true" ? "" : Object.entries(frontmatter)
     .filter(([k]) => !excludeKeys.has(k.toLowerCase()))
@@ -253,26 +261,36 @@ function renderInfobox(plugin, source, el, ctx) {
       return `<tr><td><strong>${label}</strong></td><td>${display}</td></tr>`;
     })
     .join("");
+  
   // Build infobox
   const infoboxEl = document.createElement("div");
   infoboxEl.className = "infobox-float callout";
   infoboxEl.setAttribute("data-callout", "infobox");
   infoboxEl.innerHTML = `
     <div class="callout-title">${displayName}</div>
-    ${src ? `<img src="${src}" style="width:100%;border-radius:6px;margin:0.75em 0;" />` : ""}
+    ${src ? `<img src="${src}" alt="${displayName}" />` : ""}
     ${overrides.caption ? `<div class="infobox-caption">${overrides.caption}</div>` : ""}
     ${rows ? `<div class="infobox-section-header">Details</div><table>${rows}</table>` : ""}
   `;
-  // Wrapper - use settings for styling
+  
+  // Wrapper - use CSS custom properties for styling
   const wrapper = document.createElement("div");
   wrapper.className = "infobox-wrapper";
-  const width = overrides.width || plugin.settings.infobox_width || '320px';
-  const marginLeft = overrides.margin_left || plugin.settings.infobox_margin_left || '2rem';
-  const marginBottom = overrides.margin_bottom || plugin.settings.infobox_margin_bottom || '1.5rem';
-  wrapper.setAttribute("style", `float: right; clear: right; width: ${width}; margin-left: ${marginLeft}; margin-bottom: ${marginBottom};`);
+  
+  // Set custom properties for this specific infobox if overrides are provided
+  if (overrides.width || overrides.margin_left || overrides.margin_bottom) {
+    const width = overrides.width || plugin.settings.infobox_width || '320px';
+    const marginLeft = overrides.margin_left || plugin.settings.infobox_margin_left || '2rem';
+    const marginBottom = overrides.margin_bottom || plugin.settings.infobox_margin_bottom || '1.5rem';
+    
+    wrapper.style.setProperty('--wikikit-infobox-width', width);
+    wrapper.style.setProperty('--wikikit-infobox-margin-left', marginLeft);
+    wrapper.style.setProperty('--wikikit-infobox-margin-bottom', marginBottom);
+  }
+  
   wrapper.appendChild(infoboxEl);
   el.parentElement.insertBefore(wrapper, el);
-  el.style.display = "none";
+  el.classList.add("wikikit-hidden");
 }
 
 // --- Helper: Generate Links from Tag Table Data ---
@@ -764,7 +782,6 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   function makeTableSortable(table) {
     const ths = table.querySelectorAll('th');
     ths.forEach((th, colIdx) => {
-      th.style.cursor = 'pointer';
       th.addEventListener('click', () => {
         const tbody = table.querySelector('tbody');
         const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -788,7 +805,7 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
     });
   }
 
-  // After wrapper.appendChild(collectionsSection);
+  // Make tables sortable after rendering
   setTimeout(() => {
     const tables = wrapper.querySelectorAll('.vaultmap-table');
     tables.forEach(makeTableSortable);
@@ -817,6 +834,7 @@ function getAreaIcon(area) {
 module.exports = class WikiKitPlugin extends Plugin {
   async onload() {
     console.log("WikiKit Plugin loaded ✅");
+    
     // Register custom icon if supported
     let iconId = "table";
     let vaultMapIconId = "map";
@@ -826,10 +844,16 @@ module.exports = class WikiKitPlugin extends Plugin {
       iconId = TAGTABLE_ICON_ID;
       vaultMapIconId = VAULTMAP_ICON_ID;
     }
+    
     // Load settings
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    
+    // Set initial CSS custom properties
+    setWikiKitCSSProperties(this);
+    
     // Add settings tab
     this.addSettingTab(new WikiKitSettingTab(this.app, this));
+    
     // Register sidebar views
     this.registerView(
       WIKIKIT_TAGTABLE_VIEW_TYPE,
@@ -839,6 +863,7 @@ module.exports = class WikiKitPlugin extends Plugin {
       WIKIKIT_VAULTMAP_VIEW_TYPE,
       (leaf) => new WikiKitVaultMapView(leaf, this)
     );
+    
     // Ribbon icons
     this.addRibbonIcon(iconId, "Show Tag Table Sidebar", () => {
       this.activateView();
@@ -846,6 +871,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     this.addRibbonIcon(vaultMapIconId, "Show Vault Map Sidebar", () => {
       this.activateVaultMapView();
     });
+    
     // Command palette entries
     this.addCommand({
       id: "show-tag-table-sidebar",
@@ -857,6 +883,7 @@ module.exports = class WikiKitPlugin extends Plugin {
       name: "Show Vault Map Sidebar",
       callback: () => this.activateVaultMapView()
     });
+    
     // Update sidebars on file change
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
@@ -870,6 +897,7 @@ module.exports = class WikiKitPlugin extends Plugin {
         }
       })
     );
+    
     // Register code block processors
     this.registerMarkdownCodeBlockProcessor("infobox", (source, el, ctx) => {
       renderInfobox(this, source, el, ctx);
@@ -882,6 +910,7 @@ module.exports = class WikiKitPlugin extends Plugin {
       const overrides = parseSimpleBlock(source);
       renderVaultMap(this, el, overrides);
     });
+    
     // Insert template commands
     this.addCommand({
       id: "insert-infobox",
@@ -928,6 +957,7 @@ module.exports = class WikiKitPlugin extends Plugin {
         editor.replaceSelection(block + "\n");
       }
     });
+    
     // Create links from tag table command
     this.addCommand({
       id: "create-links-from-tag-table",
@@ -1004,26 +1034,32 @@ class WikiKitTagTableView extends ItemView {
     this.plugin = plugin;
     plugin.sidebarView = this;
   }
+  
   getViewType() {
     return WIKIKIT_TAGTABLE_VIEW_TYPE;
   }
+  
   getDisplayText() {
     return "WikiKit Tag Table";
   }
+  
   getIcon() {
     return typeof this.plugin.addIcon === "function" ? TAGTABLE_ICON_ID : "table";
   }
+  
   async onOpen() {
     await this.updateTagTable();
   }
+  
   async updateTagTable() {
     const file = this.plugin.app.workspace.getActiveFile();
     if (!file) {
-      this.contentEl.innerHTML = "<p style='padding:1em;'>No file selected.</p>";
+      this.contentEl.innerHTML = "<p class='wikikit-sidebar-message'>No file selected.</p>";
       return;
     }
     await renderTagTable(this.plugin, file.path, this.contentEl);
   }
+  
   onunload() {
     this.contentEl.innerHTML = "";
     if (this.plugin.sidebarView === this) {
@@ -1039,21 +1075,27 @@ class WikiKitVaultMapView extends ItemView {
     this.plugin = plugin;
     plugin.vaultMapView = this;
   }
+  
   getViewType() {
     return WIKIKIT_VAULTMAP_VIEW_TYPE;
   }
+  
   getDisplayText() {
     return "WikiKit Vault Map";
   }
+  
   getIcon() {
     return typeof this.plugin.addIcon === "function" ? VAULTMAP_ICON_ID : "map";
   }
+  
   async onOpen() {
     await this.updateVaultMap();
   }
+  
   async updateVaultMap() {
     await renderVaultMap(this.plugin, this.contentEl);
   }
+  
   onunload() {
     this.contentEl.innerHTML = "";
     if (this.plugin.vaultMapView === this) {
@@ -1068,6 +1110,7 @@ class WikiKitSettingTab extends PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
+  
   display() {
     const { containerEl } = this;
     containerEl.empty();
@@ -1085,6 +1128,7 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.infobox_width)
         .onChange(async (value) => {
           this.plugin.settings.infobox_width = value.trim() || '320px';
+          setWikiKitCSSProperties(this.plugin);
           await this.plugin.saveData(this.plugin.settings);
         }));
     
@@ -1097,6 +1141,7 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.infobox_margin_left)
         .onChange(async (value) => {
           this.plugin.settings.infobox_margin_left = value.trim() || '2rem';
+          setWikiKitCSSProperties(this.plugin);
           await this.plugin.saveData(this.plugin.settings);
         }));
     
@@ -1109,6 +1154,7 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.infobox_margin_bottom)
         .onChange(async (value) => {
           this.plugin.settings.infobox_margin_bottom = value.trim() || '1.5rem';
+          setWikiKitCSSProperties(this.plugin);
           await this.plugin.saveData(this.plugin.settings);
         }));
     
@@ -1149,6 +1195,7 @@ class WikiKitSettingTab extends PluginSettingTab {
           this.plugin.settings.level1 = value.trim() || 'area';
           await this.plugin.saveData(this.plugin.settings);
         }));
+    
     // Level 2
     new Setting(containerEl)
       .setName('Level 2 Tag')
@@ -1160,6 +1207,7 @@ class WikiKitSettingTab extends PluginSettingTab {
           this.plugin.settings.level2 = value.trim() || 'category';
           await this.plugin.saveData(this.plugin.settings);
         }));
+    
     // Level 3
     new Setting(containerEl)
       .setName('Level 3 Tag')
@@ -1181,6 +1229,7 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.table_spacing)
         .onChange(async (value) => {
           this.plugin.settings.table_spacing = value.trim() || '2rem';
+          setWikiKitCSSProperties(this.plugin);
           await this.plugin.saveData(this.plugin.settings);
         }));
     
@@ -1311,8 +1360,7 @@ class WikiKitSettingTab extends PluginSettingTab {
     // Helpful note about refreshing
     containerEl.createEl('div', { 
       text: '💡 Tip: Vault Map settings changes require refreshing the page view to take effect. Switch to another note and back.',
-      cls: 'setting-item-description',
-      attr: { style: 'margin-top: 1rem; padding: 0.5rem; background: var(--background-secondary); border-radius: 4px; font-style: italic;' }
+      cls: 'setting-item-description wikikit-settings-note'
     });
   }
 }
