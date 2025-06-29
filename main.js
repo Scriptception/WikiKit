@@ -179,6 +179,8 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
       let first = true;
       for (const sub of sortedSubCategories) {
         const entries = subGroups[sub];
+        // Sort entries alphabetically by name
+        entries.sort((a, b) => a.name.localeCompare(b.name));
         const row = first ? categoryRow : document.createElement("tr");
         first = false;
         const subCell = document.createElement("td");
@@ -1017,7 +1019,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     // Insert template commands
     this.addCommand({
       id: "insert-infobox",
-      name: "WikiKit: Insert Infobox",
+      name: "Insert Infobox",
       editorCallback: (editor) => {
         const template = [
           "```infobox",
@@ -1032,7 +1034,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     });
     this.addCommand({
       id: "insert-tag-table",
-      name: "WikiKit: Insert Tag Table",
+      name: "Insert Tag Table",
       editorCallback: (editor) => {
         const block = [
           "```tagtable",
@@ -1047,7 +1049,7 @@ module.exports = class WikiKitPlugin extends Plugin {
     });
     this.addCommand({
       id: "insert-vault-map",
-      name: "WikiKit: Insert Vault Map",
+      name: "Insert Vault Map",
       editorCallback: (editor) => {
         const block = [
           "```vaultmap",
