@@ -122,14 +122,25 @@ compact_view: false
 ```
 ````
 
-### Vault Map Behavior
+### Vault Map Features
 
-* **Scans entire vault** for Collections (`Zettel/Collection`) and Topics (`Zettel/Topic`)
-* **Groups by Areas** using your existing `Area/` tags
+* **Scans your entire vault** for Collections (`zettel/collection`) and Topics (`zettel/topic`)
+* **Groups by Areas** using your `area/` tags
 * **Two view modes**: Detailed tables or compact overview
-* **Interactive links** to navigate directly to any collection or topic
-* **Metadata display** including creation dates, status, and content counts
-* **Responsive design** that works on desktop and mobile
+* **Interactive links** for quick navigation
+* **Metadata display**: creation dates, status, and content counts
+* **Responsive design** for desktop and mobile
+* **NEW: Free-text search** in detailed view to instantly filter Collections and Topics by name or area
+
+### Using the Vault Map Search
+
+In the **detailed view** (the default, when `compact_view: false`):
+- A search box appears above the tables.
+- **Type any text** to instantly filter both Collections and Topics tables.
+- The filter matches your text in either the **Name** or **Area** columns (case-insensitive, partial match).
+- **Delete your text** to show all results again.
+
+This makes it easy to quickly find any collection or topic, even in large vaults.
 
 ### Vault Map Parameters
 
@@ -151,23 +162,21 @@ compact_view: false
 ### View Modes
 
 #### Detailed View (Default)
-Shows comprehensive tables with:
-* **Collections table**: Name, Area, Items count (child pages), Created date, Status
-* **Topics table**: Name, Area, [Trackable Tags], Created date, Status
-* **Summary statistics**: Total pages, collections, topics, and level tag counts
-* **Scrollable tables**: When tables exceed the configured row limits, they become scrollable with sticky headers
-
-> **💡 Items Field**: Shows the number of pages that link to each collection (child pages). This helps you see how many items are actually contained within each collection.
-
-> **💡 Trackable Tags**: Counts pages within the same area that have specific tags. For example, if you track `zettel/molecule` and `zettel/atom`, it will count how many pages in the same area have those tags, giving you insight into the topic's content structure. If 'Shorten Tracked Tag Names' is enabled, only the last part of each tag will be shown as the column name.
-
-> **💡 Scrollable Tables**: Large datasets are automatically made scrollable to keep your vault map compact. Configure the row limits in settings or override them in individual vaultmap blocks.
+- **Collections table**: Name, Area, Items count, Created date, Status
+- **Topics table**: Name, Area, [Trackable Tags], Created date, Status
+- **Search box**: Instantly filter both tables by name or area
+- **Summary statistics**: Total pages, collections, topics, and tag counts
+- **Scrollable tables**: Large tables become scrollable with sticky headers
 
 #### Compact View
-Shows area-based overview with:
-* **Area sections**: Grouped by your `Area/` tags
-* **Inline links**: Collections and topics listed under each area
-* **Quick stats**: Summary with total pages and level tag counts
+- **Area-based overview** with inline links
+- **Quick stats** for your vault
+
+### Sidebar & Navigation
+- Access the Vault Map via the **map icon** in the ribbon or the command palette
+- Sidebar view provides real-time updates and navigation
+
+> **Tip:** Use the Vault Map on your home page or dashboard note for instant vault overview and navigation!
 
 ### Vault Map Sidebar
 
