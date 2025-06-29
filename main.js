@@ -42,16 +42,17 @@ const DEFAULT_SETTINGS = {
   infobox_strip_title: true,
   infobox_exclude_keys: 'tags,aliases,file,position,created,updated,Source',
   // Vault Map Settings
-  vaultmap_show_metadata: true,
-  vaultmap_sort_by: 'created',
+  vaultmap_show_metadata: false,
+  vaultmap_sort_by: 'name',
   vaultmap_group_by: 'area',
   vaultmap_compact_view: false,
   vaultmap_collection_tag: 'zettel/collection',
   vaultmap_topic_tag: 'zettel/topic',
   vaultmap_track_properties: 'status,context,lens',
-  vaultmap_status_enabled: true,
+  vaultmap_status_enabled: false,
   vaultmap_status_property: 'status',
   vaultmap_shorten_tracked_tags: true,
+  vaultmap_exclude_folders: '',
 };
 
 // --- Utility: Parse simple key:value block ---
@@ -402,6 +403,15 @@ async function renderVaultMap(plugin, container, overrides = {}) {
   
   // Get all markdown files
   const pages = plugin.app.vault.getMarkdownFiles();
+  
+  // Filter out excluded folders
+  const excludeFolders = (overrides.exclude_folders || plugin.settings.vaultmap_exclude_folders || '').split(',').map(f => f.trim().toLowerCase()).filter(f => f);
+  const filteredPages = pages.filter(page => {
+    if (excludeFolders.length === 0) return true;
+    const pagePath = page.path.toLowerCase();
+    return !excludeFolders.some(folder => pagePath.startsWith(folder + '/'));
+  });
+  
   const collections = [];
   const topics = [];
   const areas = new Set();
@@ -422,7 +432,7 @@ async function renderVaultMap(plugin, container, overrides = {}) {
   const level3Name = formatTagName(plugin.settings.level3 || 'subcategory');
   
   // Process all pages to categorize them
-  for (const page of pages) {
+  for (const page of filteredPages) {
     const cache = plugin.app.metadataCache.getCache(page.path);
     if (!cache || !cache.frontmatter) continue;
     
@@ -483,7 +493,7 @@ async function renderVaultMap(plugin, container, overrides = {}) {
   
   // Count child pages for collections (handle multiple area tags)
   collections.forEach(collection => { collection.childCount = 0; });
-  for (const page of pages) {
+  for (const page of filteredPages) {
     const cache = plugin.app.metadataCache.getCache(page.path);
     if (!cache) continue;
     const pageAreaTags = (cache.frontmatter?.tags || []).map(t => t.toLowerCase()).filter(tag => tag.startsWith('area/'));
@@ -505,7 +515,7 @@ async function renderVaultMap(plugin, container, overrides = {}) {
       topic.trackedData[prop] = 0;
       const topicAreas = topic.areas;
       if (topicAreas.length === 0) return;
-      for (const page of pages) {
+      for (const page of filteredPages) {
         const cache = plugin.app.metadataCache.getCache(page.path);
         if (!cache || !cache.frontmatter) continue;
         const pageTags = (cache.frontmatter.tags || []).map(t => t.toLowerCase().trim());
@@ -547,9 +557,9 @@ async function renderVaultMap(plugin, container, overrides = {}) {
   const showMetadata = overrides.show_metadata !== "false" && plugin.settings.vaultmap_show_metadata;
   
   if (compactView) {
-    renderCompactVaultMap(plugin, container, collections, topics, areas, showMetadata, pages.length, level1Tags.size, level2Tags.size, level3Tags.size, level1Name, level2Name, level3Name);
+    renderCompactVaultMap(plugin, container, collections, topics, areas, showMetadata, filteredPages.length, level1Tags.size, level2Tags.size, level3Tags.size, level1Name, level2Name, level3Name);
   } else {
-    renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, pages.length, level1Tags.size, level2Tags.size, level3Tags.size, trackTags, level1Name, level2Name, level3Name);
+    renderDetailedVaultMap(plugin, container, collections, topics, areas, showMetadata, groupBy, filteredPages.length, level1Tags.size, level2Tags.size, level3Tags.size, trackTags, level1Name, level2Name, level3Name);
   }
   
   // Add link handling
@@ -1257,6 +1267,18 @@ class WikiKitSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.vaultmap_topic_tag)
         .onChange(async (value) => {
           this.plugin.settings.vaultmap_topic_tag = value.trim() || 'zettel/topic';
+          await this.plugin.saveData(this.plugin.settings);
+        }));
+    
+    // Exclude Folders
+    new Setting(containerEl)
+      .setName('Exclude Folders')
+      .setDesc('Comma-separated list of folder names to exclude from vault map (e.g. templates,archive,drafts)')
+      .addText(text => text
+        .setPlaceholder('templates,archive,drafts')
+        .setValue(this.plugin.settings.vaultmap_exclude_folders)
+        .onChange(async (value) => {
+          this.plugin.settings.vaultmap_exclude_folders = value.trim() || '';
           await this.plugin.saveData(this.plugin.settings);
         }));
     

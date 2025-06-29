@@ -10,6 +10,7 @@
   position: relative;
   z-index: 10;
   padding: 0;
+  box-shadow: var(--shadow-s);
 }
 
 /* Dynamic spacing for multiple tag tables */
@@ -85,6 +86,7 @@
   padding-bottom: 0.2em;
   letter-spacing: 0.5px;
   text-transform: capitalize;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 /* --- INFOBOX TABLE --- */
@@ -95,7 +97,6 @@
   border-radius: 6px;
   overflow: hidden;
   border-collapse: collapse;
-  box-shadow: var(--shadow-s);
   border: none;
 }
 
@@ -149,6 +150,7 @@
   border-radius: 6px;
   padding: 1em;
   overflow-x: auto;
+  box-shadow: var(--shadow-s);
 }
 
 .tagtable-header {
@@ -163,7 +165,6 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
-  box-shadow: var(--shadow-s);
   border: none;
 }
 
@@ -240,6 +241,7 @@
   border-radius: 6px;
   padding: 1em;
   overflow-x: auto;
+  box-shadow: var(--shadow-s);
 }
 
 .vaultmap-header {
@@ -275,7 +277,6 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  box-shadow: var(--shadow-s);
   border: none;
 }
 
