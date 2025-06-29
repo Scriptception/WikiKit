@@ -14,6 +14,7 @@ Obsidian plugin to render structured **infoboxes** and **tag tables** from your 
 * 🔧 **Settings tab** for customizing tag levels
 * 📋 **Sidebar view** for real-time tag table display
 * 🎯 **Ribbon icon** for quick sidebar access
+* 📱 **Mobile optimized** with responsive design and sidebar compatibility fixes
 
 ---
 
@@ -26,6 +27,20 @@ Place files in `.obsidian/plugins/WikiKit/`:
 * `styles.css`
 
 Enable in **Settings → Community Plugins**.
+
+---
+
+## 📱 Mobile Compatibility
+
+WikiKit is fully optimized for mobile devices:
+
+* **Responsive infoboxes** that stack properly on small screens
+* **Mobile-friendly tag tables** with touch-optimized interactions
+* **Vault map sidebar compatibility** - scrollable tables are automatically disabled on mobile to prevent rendering issues
+* **Touch-friendly navigation** in all sidebar views
+* **Optimized table layouts** for mobile viewing
+
+> **💡 Mobile Tip**: The vaultmap sidebar automatically disables scrollable tables on mobile devices to ensure reliable rendering in Obsidian's mobile sidebar environment.
 
 ---
 

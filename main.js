@@ -659,6 +659,11 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
   const wrapper = document.createElement("div");
   wrapper.className = "vaultmap-wrapper detailed";
   
+  // Detect if we're in a mobile sidebar context
+  const isMobile = window.innerWidth <= 768;
+  const isSidebar = container.closest('.workspace-leaf') !== null;
+  const disableScrollableOnMobile = isMobile && isSidebar;
+  
   // Header
   wrapper.innerHTML = `
     <div class="vaultmap-header">
@@ -678,8 +683,8 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
     const collectionsSection = document.createElement("div");
     collectionsSection.className = "vaultmap-section";
     
-    // Get max rows setting
-    const hasMoreCollections = collections.length > maxCollectionRows;
+    // Get max rows setting - disable scrollable on mobile sidebar
+    const hasMoreCollections = collections.length > maxCollectionRows && !disableScrollableOnMobile;
     // Render all rows, not just the first N
     // const displayCollections = hasMoreCollections ? collections.slice(0, maxCollectionRows) : collections;
     const displayCollections = collections;
@@ -731,8 +736,8 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
     const topicsSection = document.createElement("div");
     topicsSection.className = "vaultmap-section";
     
-    // Get max rows setting
-    const hasMoreTopics = topics.length > maxTopicRows;
+    // Get max rows setting - disable scrollable on mobile sidebar
+    const hasMoreTopics = topics.length > maxTopicRows && !disableScrollableOnMobile;
     // Render all rows, not just the first N
     // const displayTopics = hasMoreTopics ? topics.slice(0, maxTopicRows) : topics;
     const displayTopics = topics;
@@ -913,27 +918,30 @@ function renderDetailedVaultMap(plugin, container, collections, topics, areas, s
     }
 
     // Dynamically set max-height for scrollable tables to fit exactly the number of rows specified
-    const wrappers = wrapper.querySelectorAll('.vaultmap-table-wrapper.vaultmap-scrollable');
-    wrappers.forEach((wrap, index) => {
-      const table = wrap.querySelector('table');
-      if (!table) return;
-      const thead = table.querySelector('thead');
-      const tbody = table.querySelector('tbody');
-      if (!tbody) return;
-      // Use the first row to measure row height
-      const firstRow = tbody.querySelector('tr');
-      const rowCount = Array.from(wrap.parentElement.querySelectorAll('h4'))[0]?.textContent.includes('Collection') ? maxCollectionRows : maxTopicRows;
-      if (firstRow) {
-        const rowHeight = firstRow.getBoundingClientRect().height;
-        let headerHeight = 0;
-        if (thead) {
-          const headRow = thead.querySelector('tr');
-          if (headRow) headerHeight = headRow.getBoundingClientRect().height;
+    // Skip this on mobile sidebar to avoid rendering issues
+    if (!disableScrollableOnMobile) {
+      const wrappers = wrapper.querySelectorAll('.vaultmap-table-wrapper.vaultmap-scrollable');
+      wrappers.forEach((wrap, index) => {
+        const table = wrap.querySelector('table');
+        if (!table) return;
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        // Use the first row to measure row height
+        const firstRow = tbody.querySelector('tr');
+        const rowCount = Array.from(wrap.parentElement.querySelectorAll('h4'))[0]?.textContent.includes('Collection') ? maxCollectionRows : maxTopicRows;
+        if (firstRow) {
+          const rowHeight = firstRow.getBoundingClientRect().height;
+          let headerHeight = 0;
+          if (thead) {
+            const headRow = thead.querySelector('tr');
+            if (headRow) headerHeight = headRow.getBoundingClientRect().height;
+          }
+          // Set max-height to fit exactly the number of rows + header
+          wrap.style.maxHeight = ((rowHeight * rowCount) + headerHeight) + 'px';
         }
-        // Set max-height to fit exactly the number of rows + header
-        wrap.style.maxHeight = ((rowHeight * rowCount) + headerHeight) + 'px';
-      }
-    });
+      });
+    }
   }, 0);
 }
 

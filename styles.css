@@ -541,6 +541,54 @@
   .vaultmap-group-items {
     width: 100%;
   }
+  
+  /* Tag table mobile optimizations */
+  .tagtable {
+    font-size: 0.85rem;
+  }
+  
+  .tagtable-header {
+    font-size: 0.9rem;
+  }
+  
+  .tagtable td {
+    padding: 0.4em 0.6em;
+  }
+  
+  /* Disable scrollable styles in mobile sidebar to prevent rendering issues */
+  .workspace-leaf .vaultmap-table-wrapper.vaultmap-scrollable {
+    max-height: none !important;
+    overflow-y: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 0 1rem 0 !important;
+    padding: 0 !important;
+    position: static !important;
+  }
+  
+  .workspace-leaf .vaultmap-table-wrapper.vaultmap-scrollable .vaultmap-table {
+    margin: 0 !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+  }
+  
+  .workspace-leaf .vaultmap-table-wrapper.vaultmap-scrollable thead {
+    position: static !important;
+    z-index: auto !important;
+  }
+  
+  .workspace-leaf .vaultmap-table-wrapper.vaultmap-scrollable thead tr {
+    background-color: transparent !important;
+  }
+  
+  .workspace-leaf .vaultmap-table-wrapper.vaultmap-scrollable thead th {
+    background-color: transparent !important;
+    position: static !important;
+    z-index: auto !important;
+    border-bottom: 2px solid var(--background-modifier-border) !important;
+    box-shadow: none !important;
+  }
 }
 
 @media (max-width: 550px) {
@@ -561,6 +609,24 @@
   .vaultmap-table td {
     padding: 0.4em 0.5em;
     font-size: 0.75rem;
+  }
+  
+  /* Tag table mobile optimizations for smaller screens */
+  .tagtable {
+    font-size: 0.8rem;
+  }
+  
+  .tagtable-header {
+    font-size: 0.85rem;
+  }
+  
+  .tagtable td {
+    padding: 0.3em 0.5em;
+  }
+  
+  .tagtable-wrapper {
+    padding: 0.75em;
+    margin: 1rem 0;
   }
 }
 
