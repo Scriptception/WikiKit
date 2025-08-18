@@ -147,7 +147,7 @@ async function renderTagTable(plugin, filePath, container, overrides = {}) {
     const tableWrapper = document.createElement("div");
     tableWrapper.className = "tagtable-wrapper sidebar";
     
-    tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title} - Related Pages</strong></div>`;
+    tableWrapper.innerHTML = `<div class="tagtable-header"><strong>${title}</strong></div>`;
     const table = document.createElement("table");
     table.className = "tagtable";
     
