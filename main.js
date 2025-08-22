@@ -242,20 +242,76 @@ function renderInfobox(plugin, source, el, ctx) {
   // Image logic
   let src = null;
   const imageName = overrides.image;
+  
+  // First check for explicit image override
   if (imageName && imageName.startsWith("http")) {
     src = imageName;
-  } else {
+  } else if (imageName) {
+    // Handle local image file override
     const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
-    const baseImageName = imageName || originalFileName;
     const attachmentFolder = plugin.app.vault.getConfig("attachmentFolderPath") || "";
     for (const ext of supportedExtensions) {
-      const tryPath = `${attachmentFolder}/${baseImageName}.${ext}`;
+      const tryPath = `${attachmentFolder}/${imageName}.${ext}`;
       const fileObj = plugin.app.metadataCache.getFirstLinkpathDest(tryPath, file);
       if (fileObj) {
         src = plugin.app.vault.getResourcePath(fileObj);
         break;
       }
     }
+  } else {
+    // Check for Cover property in frontmatter
+    const coverProperty = frontmatter.Cover || frontmatter.cover;
+    if (coverProperty) {
+      if (coverProperty.startsWith("http")) {
+        // Direct URL
+        src = coverProperty;
+      } else {
+        // Local file - try to find it
+        const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
+        const attachmentFolder = plugin.app.vault.getConfig("attachmentFolderPath") || "";
+        
+        // First try the exact cover property value
+        for (const ext of supportedExtensions) {
+          const tryPath = `${attachmentFolder}/${coverProperty}.${ext}`;
+          const fileObj = plugin.app.metadataCache.getFirstLinkpathDest(tryPath, file);
+          if (fileObj) {
+            src = plugin.app.vault.getResourcePath(fileObj);
+            break;
+          }
+        }
+        
+        // If not found, try with the original filename as fallback
+        if (!src) {
+          const baseImageName = originalFileName;
+          for (const ext of supportedExtensions) {
+            const tryPath = `${attachmentFolder}/${baseImageName}.${ext}`;
+            const fileObj = plugin.app.metadataCache.getFirstLinkpathDest(tryPath, file);
+            if (fileObj) {
+              src = plugin.app.vault.getResourcePath(fileObj);
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      // Fallback to original filename-based image search
+      const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
+      const baseImageName = originalFileName;
+      const attachmentFolder = plugin.app.vault.getConfig("attachmentFolderPath") || "";
+      for (const ext of supportedExtensions) {
+        const tryPath = `${attachmentFolder}/${baseImageName}.${ext}`;
+        const fileObj = plugin.app.metadataCache.getFirstLinkpathDest(tryPath, file);
+        if (fileObj) {
+          src = plugin.app.vault.getResourcePath(fileObj);
+          break;
+        }
+      }
+    }
+  }
+  
+  // Automatically exclude Cover property if it's being used as the image source
+  if (!imageName && (frontmatter.Cover || frontmatter.cover)) {
+    excludeKeys.add('cover');
   }
   
   // Table rows
